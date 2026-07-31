@@ -25,6 +25,36 @@ pnpm -r publish --access restricted
 
 Tag `v*` on GitHub to publish via CI (see `docs/PUBLISHING.md`).
 
+## Consumer setup
+
+Add a **`.npmrc`** in the root of each Vite/Octane site that installs `@patstore/*` (next to that site's `package.json`). Copy from `.npmrc.example`:
+
+```ini
+@patstore:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+Set a GitHub token with `read:packages` (and `repo` if packages are private) before installing:
+
+```bash
+# PowerShell
+$env:GITHUB_TOKEN = "ghp_..."
+
+# bash
+export GITHUB_TOKEN=ghp_...
+```
+
+Do **not** commit tokens. Using `${GITHUB_TOKEN}` in `.npmrc` is safe to commit; inject the value via env var or CI secrets.
+
+**GitHub Actions** in the site repo — same `.npmrc`, then:
+
+```yaml
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+For local monorepo dev with `file:../patstore-kit/...` links, skip this until you pull from GitHub Packages.
+
 ## Use in a site
 
 ```bash
