@@ -1,0 +1,45 @@
+{
+  "name": "@patstore/core",
+  "version": "0.1.0",
+  "description": "PatStore CMS runtime — GraphQL client, query planner, and fetch helpers",
+  "type": "module",
+  "license": "UNLICENSED",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/patstore/patstore-kit.git",
+    "directory": "packages/core"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "graphql": "^17.0.2",
+    "graphql-request": "^7.4.0"
+  },
+  "peerDependencies": {
+    "octane": ">=0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "octane": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "octane": "^0.1.21",
+    "tsup": "^8.5.0",
+    "typescript": "~5.8.3",
+    "vite": "^8.2.0"
+  }
+}
