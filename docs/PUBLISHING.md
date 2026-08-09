@@ -6,6 +6,8 @@ Scope: **`@patstore`** (GitHub org [patstore](https://github.com/patstore))
 
 - `@patstore/core`
 - `@patstore/vite-plugin`
+- `@patstore/octane-pages-plugin`
+- `@patstore/cms-content-plugin` (depends on `@patstore/octane-pages-plugin`)
 
 ## Site `.npmrc`
 
@@ -21,7 +23,7 @@ For local dev with `file:../patstore-kit/...` links, skip this until publishing.
 ## GitHub repo
 
 1. Repo: [patstore/patstore-kit](https://github.com/patstore/patstore-kit)
-2. Tag `v0.1.0` → CI publishes both packages
+2. Tag `v0.1.0` → CI publishes all packages
 
 ## Publish manually
 
@@ -36,7 +38,7 @@ npx pnpm -r publish --no-git-checks
 ## Install in sites
 
 ```bash
-npm install @patstore/core @patstore/vite-plugin
+npm install @patstore/core @patstore/vite-plugin @patstore/octane-pages-plugin @patstore/cms-content-plugin
 ```
 
 Pin versions in `package.json` and bump when the kit releases.

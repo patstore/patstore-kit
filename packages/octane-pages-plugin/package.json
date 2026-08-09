@@ -1,0 +1,36 @@
+{
+  "name": "@patstore/octane-pages-plugin",
+  "version": "0.1.0",
+  "description": "File-based routing Vite plugin for Octane apps — TanStack Start-style pages/ conventions",
+  "type": "module",
+  "license": "UNLICENSED",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/patstore/patstore-kit.git",
+    "directory": "packages/octane-pages-plugin"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "peerDependencies": {
+    "vite": "^5.0.0 || ^6.0.0 || ^8.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsup": "^8.5.0",
+    "typescript": "~5.8.3",
+    "vite": "^8.2.0"
+  }
+}

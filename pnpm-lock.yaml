@@ -15,6 +15,25 @@ importers:
         specifier: ~5.8.3
         version: 5.8.3
 
+  packages/cms-content-plugin:
+    dependencies:
+      '@patstore/octane-pages-plugin':
+        specifier: workspace:*
+        version: link:../octane-pages-plugin
+    devDependencies:
+      '@types/node':
+        specifier: ^22.15.0
+        version: 22.20.1
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(postcss@8.5.25)(typescript@5.8.3)
+      typescript:
+        specifier: ~5.8.3
+        version: 5.8.3
+      vite:
+        specifier: ^8.2.0
+        version: 8.2.0(@types/node@22.20.1)(esbuild@0.27.7)
+
   packages/core:
     dependencies:
       graphql:
@@ -27,6 +46,21 @@ importers:
       octane:
         specifier: ^0.1.21
         version: 0.1.21(vite@8.2.0(@types/node@22.20.1)(esbuild@0.27.7))
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(postcss@8.5.25)(typescript@5.8.3)
+      typescript:
+        specifier: ~5.8.3
+        version: 5.8.3
+      vite:
+        specifier: ^8.2.0
+        version: 8.2.0(@types/node@22.20.1)(esbuild@0.27.7)
+
+  packages/octane-pages-plugin:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.15.0
+        version: 22.20.1
       tsup:
         specifier: ^8.5.0
         version: 8.5.1(postcss@8.5.25)(typescript@5.8.3)
