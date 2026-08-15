@@ -1,4 +1,4 @@
-export type CmsFieldType = 'text' | 'richtext' | 'image' | 'link' | 'collection';
+export type CmsFieldType = 'text' | 'richtext' | 'image' | 'link' | 'file' | 'collection';
 
 export interface CmsFieldNode {
 	type: CmsFieldType;

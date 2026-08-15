@@ -62,15 +62,28 @@ function readRestEnv(
 	};
 }
 
+/** Narrows Vite's resolved `resolve.alias` array down to the string-keyed entries our regex-based import follower can match. */
+function stringAliasesFromViteConfig(alias: unknown): Record<string, string> {
+	const entries = Array.isArray(alias) ? alias : [];
+	const aliases: Record<string, string> = {};
+	for (const entry of entries as Array<{ find: unknown; replacement: unknown }>) {
+		if (typeof entry.find === 'string' && typeof entry.replacement === 'string') {
+			aliases[entry.find] = entry.replacement;
+		}
+	}
+	return aliases;
+}
+
 export function cmsContentPlugin(options: CmsContentPluginOptions = {}): Plugin {
 	const outputDir = path.resolve(process.cwd(), options.outputDir ?? 'cms-content');
 	let root = process.cwd();
 	let resolvedEnv: Record<string, string | undefined> = options.env ?? {};
+	let aliases: Record<string, string> = {};
 
 	const runPipeline = async () => {
 		const pagesDir = path.resolve(root, options.pagesDir ?? 'src/pages');
 		const defaultLang = resolvedEnv.DEFAULT_LANG ?? 'en';
-		const manifest = buildManifest(pagesDir);
+		const manifest = buildManifest(pagesDir, aliases);
 		writeManifest(outputDir, manifest);
 
 		const pageCount = Object.keys(manifest.pages).length;
@@ -121,6 +134,7 @@ export function cmsContentPlugin(options: CmsContentPluginOptions = {}): Plugin 
 		configResolved(config) {
 			root = config.root;
 			resolvedEnv = { ...resolvedEnv, ...(config as { env?: Record<string, string> }).env };
+			aliases = stringAliasesFromViteConfig(config.resolve?.alias);
 		},
 
 		async buildStart() {
@@ -131,14 +145,17 @@ export function cmsContentPlugin(options: CmsContentPluginOptions = {}): Plugin 
 		},
 
 		configureServer(server) {
-			const pagesDir = path.resolve(root, options.pagesDir ?? 'src/pages');
-			if (!fs.existsSync(pagesDir)) {
+			// Content markers can live anywhere under `src/` now (not just `pagesDir`)
+			// — a page can render its content through an imported component — so
+			// watch the whole source tree rather than just the pages directory.
+			const watchDir = path.resolve(root, 'src');
+			if (!fs.existsSync(watchDir)) {
 				return;
 			}
 
 			let pending = false;
-			fs.watch(pagesDir, { recursive: true }, (_event, filename) => {
-				if (!filename || !filename.endsWith('.tsrx') || filename.includes('.generated') || pending) {
+			fs.watch(watchDir, { recursive: true }, (_event, filename) => {
+				if (!filename || !/\.(tsrx|ts)$/.test(filename) || filename.includes('.generated') || pending) {
 					return;
 				}
 				pending = true;
@@ -155,6 +172,7 @@ export function cmsContentPlugin(options: CmsContentPluginOptions = {}): Plugin 
 
 export { buildManifest, writeManifest } from './manifest.js';
 export { scanTsrxContent } from './scan-content.js';
+export { extractImportSpecifiers, resolveImportSpecifier } from './resolve-imports.js';
 export { flattenManifestToPaths, pathValuesToMap } from './flatten.js';
 export { contentMapFromDefaults, syncManifestToPatStore } from './sync.js';
 export { writeContentArtifacts, writeStubContentArtifacts } from './codegen.js';

@@ -11,11 +11,22 @@ interface ParsedTag {
 }
 
 const ATTR_REGEX = /([a-zA-Z_:][-\w:.]*)\s*(?:=\s*("([^"]*)"|'([^']*)'|\{([^}]*)\}))?/g;
-/** Generic opening/self-closing tag, e.g. `<h1 class="x" data-cms="title">`. */
+/** Generic opening/self-closing tag, e.g. `<Field id="title" label="Title">`. */
 const TAG_REGEX = /<([A-Za-z][\w.-]*)((?:"[^"]*"|'[^']*'|\{[^}]*\}|[^>])*?)(\/?)>/g;
 
-/** Wrapping tags that map 1:1 to a section `type` — anything else falls back to `section`. */
-const KNOWN_SECTION_TAGS = new Set(['header', 'footer', 'section', 'article', 'aside', 'nav', 'main']);
+/**
+ * Fixed CMS marker component names (`src/cms/schema/`) — the scanner
+ * recognizes these tag names wherever they appear, regardless of which
+ * `.tsrx` file authors them (see `resolve-imports.ts` for cross-file scanning).
+ */
+const SECTION_TAG = 'Section';
+const FIELD_TAG = 'Field';
+const IMAGE_FIELD_TAG = 'ImageField';
+const LINK_FIELD_TAG = 'LinkField';
+const RICH_TEXT_FIELD_TAG = 'RichTextField';
+const DOWNLOAD_FIELD_TAG = 'DownloadField';
+const COLLECTION_FIELD_TAG = 'CollectionField';
+const LEAF_TAGS = new Set([FIELD_TAG, IMAGE_FIELD_TAG, LINK_FIELD_TAG, RICH_TEXT_FIELD_TAG, DOWNLOAD_FIELD_TAG]);
 
 function parseAttrs(attrString: string): Record<string, string> {
 	const attrs: Record<string, string> = {};
@@ -123,27 +134,29 @@ function humanizeKey(key: string): string {
 		.join(' ');
 }
 
-function sectionTypeForTag(tagName: string): string {
-	const lower = tagName.toLowerCase();
-	return KNOWN_SECTION_TAGS.has(lower) ? lower : 'section';
-}
-
 function labelFor(tag: ParsedTag, key: string): string {
-	return tag.attrs['data-cms-label']?.trim() || humanizeKey(key);
+	return tag.attrs.label?.trim() || humanizeKey(key);
 }
 
 function buildLeafField(source: string, tag: ParsedTag, key: string): CmsFieldNode {
 	const label = labelFor(tag, key);
-	const tagName = tag.tagName.toLowerCase();
 
-	if (tagName === 'img') {
+	if (tag.tagName === IMAGE_FIELD_TAG) {
 		return { type: 'image', label, default: tag.attrs.src ?? '' };
+	}
+
+	if (tag.tagName === DOWNLOAD_FIELD_TAG) {
+		return { type: 'file', label, default: tag.attrs.href ?? '' };
 	}
 
 	const text = readInnerText(source, tag);
 
-	if (tagName === 'a') {
+	if (tag.tagName === LINK_FIELD_TAG) {
 		return { type: 'link', label, default: { text, href: tag.attrs.href ?? '' } };
+	}
+
+	if (tag.tagName === RICH_TEXT_FIELD_TAG) {
+		return { type: 'richtext', label, default: text };
 	}
 
 	return { type: 'text', label, default: text };
@@ -158,8 +171,11 @@ function buildCollectionField(source: string, tag: ParsedTag, key: string): CmsF
 	const inner = source.slice(tag.end, close.innerEnd);
 	const itemFields: Record<string, CmsFieldNode> = {};
 	for (const innerTag of findTags(inner)) {
-		const fieldKey = innerTag.attrs['data-cms'];
-		if (!fieldKey || innerTag.attrs['data-cms-collection'] || innerTag.attrs['data-cms-section']) {
+		if (!LEAF_TAGS.has(innerTag.tagName)) {
+			continue;
+		}
+		const fieldKey = innerTag.attrs.id;
+		if (!fieldKey) {
 			continue;
 		}
 		itemFields[fieldKey] = buildLeafField(inner, innerTag, fieldKey);
@@ -174,11 +190,12 @@ function buildCollectionField(source: string, tag: ParsedTag, key: string): CmsF
 }
 
 /**
- * Scans one nesting level of TSRX/JSX source for `data-cms-section` (nested
- * group), `data-cms-collection` (repeated item template), and `data-cms`
- * (leaf field) markers. Leaf/collection fields are only kept when
- * `insideSection` is true — content outside any `data-cms-section` wrapper
- * is ignored, per convention.
+ * Scans one nesting level of TSRX/JSX source for `<Section id="...">` (nested
+ * group), `<CollectionField id="...">` (repeated item template), and
+ * `<Field>`/`<ImageField>`/`<LinkField>`/`<RichTextField>`/`<DownloadField>`
+ * (leaf field) marker components. Leaf/collection fields are only kept when
+ * `insideSection` is true — content
+ * outside any `<Section>` is ignored, per convention.
  */
 function scanScope(source: string, insideSection: boolean): Record<string, CmsNode> {
 	const nodes: Record<string, CmsNode> = {};
@@ -187,8 +204,11 @@ function scanScope(source: string, insideSection: boolean): Record<string, CmsNo
 	const tags = findTags(source);
 
 	for (const tag of tags) {
-		const sectionKey = tag.attrs['data-cms-section'];
-		if (!sectionKey || tag.selfClosing || isConsumed(tag.start)) {
+		if (tag.tagName !== SECTION_TAG || tag.selfClosing || isConsumed(tag.start)) {
+			continue;
+		}
+		const sectionKey = tag.attrs.id;
+		if (!sectionKey) {
 			continue;
 		}
 
@@ -200,7 +220,7 @@ function scanScope(source: string, insideSection: boolean): Record<string, CmsNo
 
 		const inner = source.slice(tag.end, close.innerEnd);
 		const section: CmsSectionNode = {
-			type: sectionTypeForTag(tag.tagName),
+			type: tag.attrs.type?.trim() || 'section',
 			label: labelFor(tag, sectionKey),
 			content: scanScope(inner, true),
 		};
@@ -212,8 +232,11 @@ function scanScope(source: string, insideSection: boolean): Record<string, CmsNo
 	}
 
 	for (const tag of tags) {
-		const collectionKey = tag.attrs['data-cms-collection'];
-		if (!collectionKey || tag.selfClosing || isConsumed(tag.start)) {
+		if (tag.tagName !== COLLECTION_FIELD_TAG || tag.selfClosing || isConsumed(tag.start)) {
+			continue;
+		}
+		const collectionKey = tag.attrs.id;
+		if (!collectionKey) {
 			continue;
 		}
 		const field = buildCollectionField(source, tag, collectionKey);
@@ -228,11 +251,11 @@ function scanScope(source: string, insideSection: boolean): Record<string, CmsNo
 	}
 
 	for (const tag of tags) {
-		if (isConsumed(tag.start)) {
+		if (isConsumed(tag.start) || !LEAF_TAGS.has(tag.tagName)) {
 			continue;
 		}
-		const fieldKey = tag.attrs['data-cms'];
-		if (!fieldKey || tag.attrs['data-cms-collection'] || tag.attrs['data-cms-section']) {
+		const fieldKey = tag.attrs.id;
+		if (!fieldKey) {
 			continue;
 		}
 		nodes[fieldKey] = buildLeafField(source, tag, fieldKey);
@@ -242,17 +265,23 @@ function scanScope(source: string, insideSection: boolean): Record<string, CmsNo
 }
 
 /**
- * Scans TSRX/JSX source for `data-cms-section="key"` wrappers. Only
- * `data-cms` / `data-cms-collection` fields nested inside a section are
- * collected — anything outside a section is ignored.
+ * Scans TSRX/JSX source for `<Section id="key">` wrappers. Only
+ * `<Field>`/`<ImageField>`/`<LinkField>`/`<RichTextField>`/`<DownloadField>`/
+ * `<CollectionField>` fields nested inside a `<Section>` are collected —
+ * anything outside a section is ignored.
  *
  * ```tsrx
- * <section data-cms-section="page" data-cms-label="Seite">
- *   <header data-cms-section="hero" data-cms-label="Hero">
- *     <h1 data-cms="title">Home</h1>
- *   </header>
- * </section>
+ * <Section id="page" label="Seite">
+ *   <Section id="hero" label="Hero">
+ *     <Field id="title">Home</Field>
+ *   </Section>
+ * </Section>
  * ```
+ *
+ * Scans only the given source's own text — a page that renders its content
+ * through an imported component (`<Home />`) yields no nodes here; see
+ * `resolve-imports.ts` and `manifest.ts` for the cross-file scan that follows
+ * local imports and unions their marker nodes into the page's manifest.
  */
 export function scanTsrxContent(source: string): CmsPageManifest {
 	return scanScope(source, false);

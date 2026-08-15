@@ -1,7 +1,7 @@
 {
   "name": "@patstore/cms-content-plugin",
   "version": "0.1.0",
-  "description": "Vite plugin that scans data-cms markers in page markup and syncs page content with PatStore",
+  "description": "Vite plugin that scans Section/Field marker components in page markup and syncs page content with PatStore",
   "type": "module",
   "license": "UNLICENSED",
   "publishConfig": {
