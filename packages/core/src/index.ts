@@ -65,3 +65,11 @@ export {
 	usePatStoreCollection,
 	usePatStoreObject,
 } from './hooks/usePatStoreData.js';
+
+export {
+	generatePatstoreTypesSource,
+	listPatstoreTypeEntries,
+	patstoreTypeName,
+	typescriptTypeForField,
+} from './codegen/generate-patstore-types.js';
+export type { PatstoreTypeEntry } from './codegen/generate-patstore-types.js';

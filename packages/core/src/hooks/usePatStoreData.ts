@@ -4,7 +4,7 @@ import { isPatStoreConfigured } from '../env.js';
 import { queryPlanner } from '../planner/query-planner.js';
 import { createCacheResource } from '../resources/cache-resource.js';
 import { resourceManager } from '../resources/resource-manager.js';
-import type { QuerySpec } from '../types.js';
+import type { PatstoreClassMap, QuerySpec } from '../types.js';
 
 function specCacheKey(spec: QuerySpec): string {
 	return JSON.stringify(spec);
@@ -34,6 +34,14 @@ export function usePatStoreData<T = unknown>(spec: QuerySpec): T {
 	return use(resource.toPromise()) as T;
 }
 
+export function usePatStoreCollection<C extends keyof PatstoreClassMap>(
+	className: C,
+	options?: Omit<QuerySpec, 'className' | 'mode'>,
+): PatstoreClassMap[C][];
+export function usePatStoreCollection<T extends { objectId: string }>(
+	className: string,
+	options?: Omit<QuerySpec, 'className' | 'mode'>,
+): T[];
 export function usePatStoreCollection<T extends { objectId: string }>(
 	className: string,
 	options: Omit<QuerySpec, 'className' | 'mode'> = {},
@@ -45,6 +53,16 @@ export function usePatStoreCollection<T extends { objectId: string }>(
 	});
 }
 
+export function usePatStoreObject<C extends keyof PatstoreClassMap>(
+	className: C,
+	objectId: string,
+	options?: Omit<QuerySpec, 'className' | 'mode' | 'objectId'>,
+): PatstoreClassMap[C];
+export function usePatStoreObject<T extends { objectId: string }>(
+	className: string,
+	objectId: string,
+	options?: Omit<QuerySpec, 'className' | 'mode' | 'objectId'>,
+): T;
 export function usePatStoreObject<T extends { objectId: string }>(
 	className: string,
 	objectId: string,

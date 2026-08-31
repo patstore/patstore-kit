@@ -46,6 +46,41 @@ export interface PatStoreObject {
 	[key: string]: unknown;
 }
 
+/** File field value (`{ name, url }`) as returned by GraphQL / SSG artifacts. */
+export interface PatStoreFile {
+	name?: string;
+	url: string;
+}
+
+/** Pointer-like person field (`person` / `edit_person`). */
+export interface PatStorePersonRef {
+	objectId: string;
+	label?: string;
+	portrait?: PatStoreFile | null;
+}
+
+/** Pointer-like category field. */
+export interface PatStoreCategoryRef {
+	objectId: string;
+	label?: string;
+}
+
+export interface PatStoreGeoPoint {
+	latitude: number;
+	longitude: number;
+}
+
+/**
+ * Project-specific `className` → record type map.
+ * Augmented by generated `@cms` types (e.g. `Article: PatstoreArticle`).
+ */
+export interface PatstoreClassMap {}
+
+/** Record type for `className`, or {@link PatStoreObject} when the class is unknown. */
+export type PatstoreRecordOf<C extends string> = C extends keyof PatstoreClassMap
+	? PatstoreClassMap[C]
+	: PatStoreObject;
+
 /** What a component (or page) asks for — no transport details. */
 export interface QuerySpec {
 	className: string;

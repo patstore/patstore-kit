@@ -86,7 +86,11 @@ import './cms/setup.ts';
 
 ```ts
 import { fetchPatStoreCollection } from '@patstore/core';
+import type { PatstoreArticle } from '@cms';
 
 const articles = fetchPatStoreCollection('Article', { limit: 6 });
+// articles: Promise<PatstoreArticle[]>  (after SSG generates data/types)
 // switch: { source: 'dynamic' }
 ```
+
+Generated `Patstore{ClassName}` record types live in `data/types` and are imported from `@cms`. `@data` still exports the static accessors.

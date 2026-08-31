@@ -1,6 +1,6 @@
 {
   "name": "@patstore/vite-plugin",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "PatStore Vite plugin — SSG fetch, asset download, incremental sync",
   "type": "module",
   "license": "UNLICENSED",

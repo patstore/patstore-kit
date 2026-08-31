@@ -1,7 +1,7 @@
 import { getPatStoreStaticDataAccess, isStaticDataConfigured } from './static-data.js';
 import { isPatStoreConfigured } from './env.js';
 import { resourceManager } from './resources/resource-manager.js';
-import type { QuerySpec } from './types.js';
+import type { PatstoreClassMap, QuerySpec } from './types.js';
 
 /** Where data is loaded from. Default resolves to static when SSG data exists. */
 export type PatStoreFetchSource = 'static' | 'dynamic';
@@ -76,6 +76,14 @@ function findStaticObject<T extends { objectId: string }>(
 	return access.findStaticCollection<T>(className).find((item) => item.objectId === objectId) ?? null;
 }
 
+export function fetchPatStoreCollection<C extends keyof PatstoreClassMap>(
+	className: C,
+	options?: PatStoreFetchOptions,
+): Promise<PatstoreClassMap[C][]>;
+export function fetchPatStoreCollection<T extends { objectId: string }>(
+	className: string,
+	options?: PatStoreFetchOptions,
+): Promise<T[]>;
 export function fetchPatStoreCollection<T extends { objectId: string }>(
 	className: string,
 	options: PatStoreFetchOptions = {},
@@ -94,6 +102,16 @@ export function fetchPatStoreCollection<T extends { objectId: string }>(
 	return fetchFromServer<T[]>({ className, mode: 'find', ...query });
 }
 
+export function fetchPatStoreObject<C extends keyof PatstoreClassMap>(
+	className: C,
+	objectId: string,
+	options?: PatStoreFetchOptions & { searchAllCollections?: boolean },
+): Promise<PatstoreClassMap[C] | null>;
+export function fetchPatStoreObject<T extends { objectId: string }>(
+	className: string,
+	objectId: string,
+	options?: PatStoreFetchOptions & { searchAllCollections?: boolean },
+): Promise<T | null>;
 export function fetchPatStoreObject<T extends { objectId: string }>(
 	className: string,
 	objectId: string,

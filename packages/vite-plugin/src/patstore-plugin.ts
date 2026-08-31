@@ -59,6 +59,16 @@ export interface PatStorePluginOptions {
 	/** Download CMS files during SSG. Default: true unless VITE_PATSTORE_DOWNLOAD_ASSETS=false. */
 	downloadAssets?: boolean;
 	outputDir?: string;
+	/**
+	 * Vite / import alias for generated `Patstore*` record types.
+	 * Set to `false` to skip. Default: `@cms` (`import type { PatstoreArticle } from '@cms'`).
+	 */
+	cmsAlias?: string | false;
+	/**
+	 * Vite / import alias for generated static-data accessors.
+	 * Set to `false` to skip. Default: `@data`.
+	 */
+	dataAlias?: string | false;
 	env?: Record<string, string | undefined>;
 }
 
@@ -75,7 +85,18 @@ export function patStorePlugin(options: PatStorePluginOptions = {}): Plugin {
 		name: 'vite-plugin-patstore',
 
 		config() {
-			// Client env is passed via plugin options (`loadEnv` in vite.config.ts).
+			const cmsAlias = options.cmsAlias === false ? null : (options.cmsAlias ?? '@cms');
+			const dataAlias = options.dataAlias === false ? null : (options.dataAlias ?? '@data');
+			const alias: Record<string, string> = {};
+			if (dataAlias) {
+				alias[dataAlias] = outputDir;
+			}
+			if (cmsAlias) {
+				alias[cmsAlias] = path.join(outputDir, 'types');
+			}
+			return {
+				resolve: { alias },
+			};
 		},
 
 		configResolved(config) {
