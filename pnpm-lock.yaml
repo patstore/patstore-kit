@@ -74,7 +74,7 @@ importers:
   packages/vite-plugin:
     dependencies:
       '@patstore/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       graphql:
         specifier: ^17.0.2
