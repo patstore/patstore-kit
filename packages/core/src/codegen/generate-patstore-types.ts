@@ -38,6 +38,7 @@ const STRING_FIELD_TYPES = new Set<ModuleFieldType>([
 	'video',
 	'edit_role',
 	'emails',
+	'lang',
 ]);
 
 const FILE_LIKE_FIELD_TYPES = new Set<ModuleFieldType>([

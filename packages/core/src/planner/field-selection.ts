@@ -64,6 +64,7 @@ const SCALAR_FIELD_TYPES = new Set<ModuleFieldType>([
 	'edit_persons',
 	'edit_team',
 	'emails',
+	'lang',
 ]);
 
 const USER_POINTER_TOKENS = new Set(['user', 'created_by', 'updated_by', '_user']);
