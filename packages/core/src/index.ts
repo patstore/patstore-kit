@@ -27,6 +27,7 @@ export {
 	defaultProjectFilter,
 	listFileFields,
 	isFileField,
+	isUserPointerField,
 	isSupportedFieldType,
 	selectionForField,
 	listUnsupportedFields,

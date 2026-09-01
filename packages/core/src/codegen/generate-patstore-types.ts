@@ -1,5 +1,5 @@
 import { getStorageKey } from '../collection-keys.js';
-import { isFileField } from '../planner/field-selection.js';
+import { isFileField, isUserPointerField } from '../planner/field-selection.js';
 import type { DataField, ModuleField, ModuleFieldType, PatStoreModule } from '../types.js';
 
 const SKIP_FIELD_IDS = new Set(['createdAt', 'updatedAt', 'objectId', 'ACL', 'id']);
@@ -114,14 +114,7 @@ function typescriptTypeForFieldType(type: ModuleFieldType, fieldId: string): str
 	if (type === 'person' || type === 'edit_person') {
 		return 'PatStorePersonRef | null';
 	}
-	if (
-		type === 'user' ||
-		type === 'updated_by' ||
-		type === 'created_by' ||
-		fieldId === 'user' ||
-		fieldId === 'updated_by' ||
-		fieldId === 'created_by'
-	) {
+	if (isUserPointerField({ id: fieldId, type })) {
 		return 'PatStoreUserRef | null';
 	}
 	if (type === 'edit_persons' || type === 'edit_team' || type === 'persons') {
@@ -146,6 +139,9 @@ function typescriptTypeForFieldType(type: ModuleFieldType, fieldId: string): str
 }
 
 export function typescriptTypeForField(field: ModuleField): string {
+	if (isUserPointerField(field)) {
+		return 'PatStoreUserRef | null';
+	}
 	if (isFileField(field) && field.type !== 'documents' && field.id !== 'documents') {
 		return 'PatStoreFile | null';
 	}
@@ -189,7 +185,9 @@ function collectFields(module: PatStoreModule): Array<{
 			id,
 			label: field.label || id,
 			required: false,
-			tsType: typescriptTypeForFieldType(field.type, id),
+			tsType: isUserPointerField({ id, type: field.type, name: field.name })
+				? 'PatStoreUserRef | null'
+				: typescriptTypeForFieldType(field.type, id),
 		});
 	}
 

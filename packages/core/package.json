@@ -1,6 +1,6 @@
 {
   "name": "@patstore/core",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "PatStore CMS runtime — GraphQL client, query planner, and fetch helpers",
   "type": "module",
   "license": "UNLICENSED",

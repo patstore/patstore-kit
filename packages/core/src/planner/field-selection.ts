@@ -66,10 +66,19 @@ const SCALAR_FIELD_TYPES = new Set<ModuleFieldType>([
 	'emails',
 ]);
 
-const USER_POINTER_FIELD_TYPES = new Set<ModuleFieldType>(['user', 'updated_by', 'created_by']);
-const USER_POINTER_FIELD_IDS = new Set(['user', 'updated_by', 'created_by']);
+const USER_POINTER_TOKENS = new Set(['user', 'created_by', 'updated_by', '_user']);
 
 const SKIP_FIELD_IDS = new Set(['createdAt', 'updatedAt', 'objectId', 'ACL']);
+
+function normalizeFieldToken(value: unknown): string {
+	return typeof value === 'string' ? value.trim().toLowerCase().replace(/^_/, '') : '';
+}
+
+/** `_User` pointer fields — GraphQL type is `User`, not a scalar. */
+export function isUserPointerField(field: { id?: string; type?: string; name?: string }): boolean {
+	const tokens = [field.id, field.type, field.name].map(normalizeFieldToken);
+	return tokens.some((token) => USER_POINTER_TOKENS.has(token));
+}
 
 function userPointerSelection(fieldId: string): string {
 	return `${fieldId} { objectId label }`;
@@ -109,13 +118,17 @@ export function isSupportedFieldType(type: ModuleFieldType): boolean {
 		type === 'geopoint' ||
 		type === 'edit_geopoint' ||
 		type === 'documents' ||
-		USER_POINTER_FIELD_TYPES.has(type)
+		isUserPointerField({ type })
 	);
 }
 
 export function selectionForField(field: ModuleField, _className?: string): string {
 	if (!field.active || SKIP_FIELD_IDS.has(field.id)) {
 		return '';
+	}
+
+	if (isUserPointerField(field)) {
+		return userPointerSelection(field.id);
 	}
 
 	if (FILE_FIELD_IDS.has(field.id) || FILE_FIELD_TYPES.has(field.type)) {
@@ -128,10 +141,6 @@ export function selectionForField(field: ModuleField, _className?: string): stri
 
 	if (ELEMENT_ARRAY_FIELD_TYPES.has(field.type)) {
 		return elementArraySelection(field.id);
-	}
-
-	if (USER_POINTER_FIELD_IDS.has(field.id) || USER_POINTER_FIELD_TYPES.has(field.type)) {
-		return userPointerSelection(field.id);
 	}
 
 	if (SCALAR_FIELD_TYPES.has(field.type)) {
