@@ -36,9 +36,6 @@ const STRING_FIELD_TYPES = new Set<ModuleFieldType>([
 	'edit_color',
 	'custom',
 	'video',
-	'user',
-	'updated_by',
-	'created_by',
 	'edit_role',
 	'emails',
 ]);
@@ -56,6 +53,7 @@ const HELPER_TYPE_IMPORTS = {
 	PatStoreFile: true,
 	PatStorePersonRef: true,
 	PatStoreCategoryRef: true,
+	PatStoreUserRef: true,
 	PatStoreGeoPoint: true,
 	PatStoreObject: true,
 } as const;
@@ -115,6 +113,16 @@ function typescriptTypeForFieldType(type: ModuleFieldType, fieldId: string): str
 	}
 	if (type === 'person' || type === 'edit_person') {
 		return 'PatStorePersonRef | null';
+	}
+	if (
+		type === 'user' ||
+		type === 'updated_by' ||
+		type === 'created_by' ||
+		fieldId === 'user' ||
+		fieldId === 'updated_by' ||
+		fieldId === 'created_by'
+	) {
+		return 'PatStoreUserRef | null';
 	}
 	if (type === 'edit_persons' || type === 'edit_team' || type === 'persons') {
 		return 'PatStorePersonRef[] | null';

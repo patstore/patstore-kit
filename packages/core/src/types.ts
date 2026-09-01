@@ -65,6 +65,12 @@ export interface PatStoreCategoryRef {
 	label?: string;
 }
 
+/** Pointer to `_User` (`user` / `created_by` / `updated_by`). */
+export interface PatStoreUserRef {
+	objectId: string;
+	label?: string;
+}
+
 export interface PatStoreGeoPoint {
 	latitude: number;
 	longitude: number;

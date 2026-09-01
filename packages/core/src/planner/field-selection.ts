@@ -59,9 +59,6 @@ const SCALAR_FIELD_TYPES = new Set<ModuleFieldType>([
 	'edit_color',
 	'custom',
 	'video',
-	'user',
-	'updated_by',
-	'created_by',
 	'edit_role',
 	'files',
 	'edit_persons',
@@ -69,7 +66,14 @@ const SCALAR_FIELD_TYPES = new Set<ModuleFieldType>([
 	'emails',
 ]);
 
+const USER_POINTER_FIELD_TYPES = new Set<ModuleFieldType>(['user', 'updated_by', 'created_by']);
+const USER_POINTER_FIELD_IDS = new Set(['user', 'updated_by', 'created_by']);
+
 const SKIP_FIELD_IDS = new Set(['createdAt', 'updatedAt', 'objectId', 'ACL']);
+
+function userPointerSelection(fieldId: string): string {
+	return `${fieldId} { objectId label }`;
+}
 
 function fileSelection(fieldId: string): string {
 	return `${fieldId} { name url }`;
@@ -104,7 +108,8 @@ export function isSupportedFieldType(type: ModuleFieldType): boolean {
 		type === 'boolean' ||
 		type === 'geopoint' ||
 		type === 'edit_geopoint' ||
-		type === 'documents'
+		type === 'documents' ||
+		USER_POINTER_FIELD_TYPES.has(type)
 	);
 }
 
@@ -123,6 +128,10 @@ export function selectionForField(field: ModuleField, _className?: string): stri
 
 	if (ELEMENT_ARRAY_FIELD_TYPES.has(field.type)) {
 		return elementArraySelection(field.id);
+	}
+
+	if (USER_POINTER_FIELD_IDS.has(field.id) || USER_POINTER_FIELD_TYPES.has(field.type)) {
+		return userPointerSelection(field.id);
 	}
 
 	if (SCALAR_FIELD_TYPES.has(field.type)) {
