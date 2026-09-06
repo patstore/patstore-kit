@@ -14,6 +14,11 @@ export const MODULE_GRAPHQL_SELECTION = `
 			value
 		}
 	}
+	categories {
+		... on Element {
+			value
+		}
+	}
 `;
 
 const FILE_FIELD_TYPES = new Set<ModuleFieldType>(['file', 'portrait']);
@@ -192,13 +197,28 @@ export function buildSelectionFromModule(module: PatStoreModule, extraFields: st
 	}
 
 	const fromModule = activeFields
+		.filter((field) => !(moduleHasCategories(module) && field.id === 'categories'))
 		.map((field) => selectionForField(field, className))
 		.filter(Boolean)
 		.join('\n');
 
-	const extras = extraFields.filter(Boolean).join('\n');
+	const extras = extraFields
+		.filter((field) => field && !(moduleHasCategories(module) && field === 'categories'))
+		.join('\n');
 
-	return [fromModule, extras].filter(Boolean).join('\n');
+	return [fromModule, categoriesArraySelection(module), extras].filter(Boolean).join('\n');
+}
+
+function moduleHasCategories(module: PatStoreModule): boolean {
+	return Array.isArray(module.categories) && module.categories.length > 0;
+}
+
+/** Relation field on the connected class when the Module defines category groups. */
+function categoriesArraySelection(module: PatStoreModule): string {
+	if (!moduleHasCategories(module)) {
+		return '';
+	}
+	return 'categories { objectId label }';
 }
 
 export function listFileFields(module: PatStoreModule): string[] {

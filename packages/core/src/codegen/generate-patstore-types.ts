@@ -20,12 +20,13 @@ const ELEMENT_ARRAY_FIELD_TYPES = new Set<ModuleFieldType>([
 	'edit_webpage_components',
 	'edit_dates',
 	'edit_times',
+	'documents'
 ]);
 
 const STRING_FIELD_TYPES = new Set<ModuleFieldType>([
 	'string',
 	'edit_string',
-	'textfield',
+	'textfield',	
 	'edit_textfield',
 	'texteditor',
 	'edit_texteditor',
@@ -39,15 +40,14 @@ const STRING_FIELD_TYPES = new Set<ModuleFieldType>([
 	'edit_role',
 	'emails',
 	'lang',
+	'image',
+	'edit_image',
 ]);
 
 const FILE_LIKE_FIELD_TYPES = new Set<ModuleFieldType>([
 	'file',
 	'portrait',
-	'documents',
-	'image',
-	'edit_image',
-	'image_preview',
+	'image_preview'
 ]);
 
 const HELPER_TYPE_IMPORTS = {
@@ -189,6 +189,15 @@ function collectFields(module: PatStoreModule): Array<{
 			tsType: isUserPointerField({ id, type: field.type, name: field.name })
 				? 'PatStoreUserRef | null'
 				: typescriptTypeForFieldType(field.type, id),
+		});
+	}
+
+	if (Array.isArray(module.categories) && module.categories.length > 0) {
+		byId.set('categories', {
+			id: 'categories',
+			label: 'Categories',
+			required: false,
+			tsType: 'PatStoreCategoryRef[] | null',
 		});
 	}
 

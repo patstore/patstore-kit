@@ -1,5 +1,5 @@
 import type { GraphQLClient } from 'graphql-request';
-import type { DataField, PatStoreModule, PatStoreObject } from '../types.js';
+import type { DataField, ModuleCategory, PatStoreModule, PatStoreObject } from '../types.js';
 import { defaultProjectFilter, MODULE_GRAPHQL_SELECTION } from '../planner/field-selection.js';
 
 function unwrapElement(value: unknown): unknown {
@@ -18,7 +18,7 @@ function unwrapElement(value: unknown): unknown {
 export function normalizeModule(node: PatStoreObject): PatStoreModule {
 	const fieldsRaw = node.fields;
 	const dataFieldsRaw = node.data_fields;
-
+	const categoriesRaw = node.categories;
 	let fields: PatStoreModule['fields'] = [];
 	if (Array.isArray(fieldsRaw)) {
 		fields = fieldsRaw.map((entry) => unwrapElement(entry) as PatStoreModule['fields'][number]);
@@ -35,12 +35,21 @@ export function normalizeModule(node: PatStoreObject): PatStoreModule {
 		data_fields = Array.isArray(unwrapped) ? unwrapped : [];
 	}
 
+	let categories: ModuleCategory[] = [];
+	if (Array.isArray(categoriesRaw)) {
+		categories = categoriesRaw.map((entry) => unwrapElement(entry) as ModuleCategory);
+	} else if (categoriesRaw) {
+		const unwrapped = unwrapElement(categoriesRaw);
+		categories = Array.isArray(unwrapped) ? unwrapped : [];
+	}
+
 	return {
 		objectId: node.objectId,
 		name: String(node.name ?? ''),
 		connected_class: String(node.connected_class ?? ''),
 		fields,
 		data_fields,
+		categories,
 	};
 }
 

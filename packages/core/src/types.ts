@@ -30,11 +30,23 @@ export interface DataField {
 	position: number;
 }
 
+export type ModuleCategory = {
+	id: string;
+	moduleId: string;
+	label: string;
+	key: string;
+	connected_class: string;
+	position: number;
+	is_multi: boolean;
+	category_ids: string[];
+  };
+
 export interface PatStoreModule {
 	objectId: string;
 	name: string;
 	fields: ModuleField[];
 	data_fields?: DataField[];
+	categories?: ModuleCategory[];
 	connected_class: string;
 	project?: { objectId: string } | null;
 }
