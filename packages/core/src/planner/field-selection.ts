@@ -197,28 +197,55 @@ export function buildSelectionFromModule(module: PatStoreModule, extraFields: st
 	}
 
 	const fromModule = activeFields
-		.filter((field) => !(moduleHasCategories(module) && field.id === 'categories'))
+		.filter((field) => !(shouldSelectClassCategories(className) && field.id === 'categories'))
 		.map((field) => selectionForField(field, className))
 		.filter(Boolean)
 		.join('\n');
 
 	const extras = extraFields
-		.filter((field) => field && !(moduleHasCategories(module) && field === 'categories'))
+		.filter((field) => field && !(shouldSelectClassCategories(className) && field === 'categories'))
 		.join('\n');
 
-	return [fromModule, categoriesArraySelection(module), extras].filter(Boolean).join('\n');
+	return [fromModule, categoriesArraySelection(className), extras].filter(Boolean).join('\n');
 }
 
-function moduleHasCategories(module: PatStoreModule): boolean {
-	return Array.isArray(module.categories) && module.categories.length > 0;
+const SKIP_CLASS_CATEGORIES = new Set(['Module', 'Category']);
+
+/** Content classes store category ids as `ArrayResult` / Element values. */
+export function shouldSelectClassCategories(className: string): boolean {
+	return Boolean(className) && !SKIP_CLASS_CATEGORIES.has(className);
 }
 
-/** Array of category ids on the connected class (`ArrayResult` / Element values). */
-function categoriesArraySelection(module: PatStoreModule): string {
-	if (!moduleHasCategories(module)) {
+function categoriesArraySelection(className: string): string {
+	if (!shouldSelectClassCategories(className)) {
 		return '';
 	}
 	return elementArraySelection('categories');
+}
+
+export function stripCategoriesSelection(selection: string): string {
+	const match = selection.search(/\bcategories\s*\{/);
+	if (match < 0) {
+		return selection;
+	}
+	const brace = selection.indexOf('{', match);
+	let depth = 0;
+	for (let index = brace; index < selection.length; index++) {
+		if (selection[index] === '{') {
+			depth += 1;
+		} else if (selection[index] === '}') {
+			depth -= 1;
+			if (depth === 0) {
+				return `${selection.slice(0, match)}${selection.slice(index + 1)}`.trim();
+			}
+		}
+	}
+	return selection;
+}
+
+export function isMissingCategoriesFieldError(error: unknown): boolean {
+	const message = error instanceof Error ? error.message : String(error);
+	return /Cannot query field ["']categories["']/i.test(message);
 }
 
 export function listFileFields(module: PatStoreModule): string[] {

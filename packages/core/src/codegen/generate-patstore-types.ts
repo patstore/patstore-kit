@@ -1,5 +1,5 @@
 import { getStorageKey } from '../collection-keys.js';
-import { isFileField, isUserPointerField } from '../planner/field-selection.js';
+import { isFileField, isUserPointerField, shouldSelectClassCategories } from '../planner/field-selection.js';
 import type { DataField, ModuleField, ModuleFieldType, PatStoreModule } from '../types.js';
 
 const SKIP_FIELD_IDS = new Set(['createdAt', 'updatedAt', 'objectId', 'ACL', 'id']);
@@ -192,7 +192,7 @@ function collectFields(module: PatStoreModule): Array<{
 		});
 	}
 
-	if (Array.isArray(module.categories) && module.categories.length > 0) {
+	if (shouldSelectClassCategories(module.connected_class)) {
 		byId.set('categories', {
 			id: 'categories',
 			label: 'Categories',

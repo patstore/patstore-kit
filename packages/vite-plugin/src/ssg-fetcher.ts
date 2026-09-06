@@ -5,6 +5,8 @@ import {
 	fetchModulesGraphQL,
 	getCollectionKey,
 	getStorageKey,
+	isMissingCategoriesFieldError,
+	stripCategoriesSelection,
 } from '@patstore/core';
 import type { PatStoreModule, PatStoreObject } from '@patstore/core';
 import { buildAuthHeaders, type PatStoreBuildEnv } from './build-env.js';
@@ -67,10 +69,11 @@ async function fetchCollection(
 	module: PatStoreModule,
 ): Promise<PatStoreObject[]> {
 	const collectionKey = getCollectionKey(className);
-	const selection = buildSelectionFromModule(module, ['objectId', 'createdAt', 'updatedAt']);
+	let selection = buildSelectionFromModule(module, ['objectId', 'createdAt', 'updatedAt']);
 	const params = defaultProjectFilter(env.projectId);
 
-	const query = `
+	const runQuery = async (fieldSelection: string): Promise<PatStoreObject[]> => {
+		const query = `
 		query SsgFind${className}(
 			$params: ${className}WhereInput
 			$first: Int
@@ -83,40 +86,51 @@ async function fetchCollection(
 					node {
 						id
 						objectId
-						${selection}
+						${fieldSelection}
 					}
 				}
 			}
 		}
 	`;
 
-	const pageSize = 100;
-	let skip = 0;
-	let total = Infinity;
-	const results: PatStoreObject[] = [];
+		const pageSize = 100;
+		let skip = 0;
+		let total = Infinity;
+		const results: PatStoreObject[] = [];
 
-	while (skip < total) {
-		const data = await client.request<
-			Record<string, { count: number; edges: { node: PatStoreObject }[] }>
-		>(query, {
-			params,
-			first: pageSize,
-			skip,
-			order: ['createdAt_DESC'],
-		});
+		while (skip < total) {
+			const data = await client.request<
+				Record<string, { count: number; edges: { node: PatStoreObject }[] }>
+			>(query, {
+				params,
+				first: pageSize,
+				skip,
+				order: ['createdAt_DESC'],
+			});
 
-		const connection = data[collectionKey];
-		const batch = connection?.edges?.map((edge) => normalizeRecord(edge.node)) ?? [];
-		total = connection?.count ?? batch.length;
-		results.push(...batch);
-		skip += pageSize;
+			const connection = data[collectionKey];
+			const batch = connection?.edges?.map((edge) => normalizeRecord(edge.node)) ?? [];
+			total = connection?.count ?? batch.length;
+			results.push(...batch);
+			skip += pageSize;
 
-		if (batch.length < pageSize) {
-			break;
+			if (batch.length < pageSize) {
+				break;
+			}
 		}
-	}
 
-	return results;
+		return results;
+	};
+
+	try {
+		return await runQuery(selection);
+	} catch (error) {
+		if (!isMissingCategoriesFieldError(error)) {
+			throw error;
+		}
+		selection = stripCategoriesSelection(selection);
+		return runQuery(selection);
+	}
 }
 
 function buildDownloadedFilesManifest(

@@ -8,7 +8,8 @@ function unwrapElement(value: unknown): unknown {
 		typeof value === 'object' &&
 		'value' in value &&
 		(typeof (value as { __typename?: string }).__typename === 'undefined' ||
-			(value as { __typename?: string }).__typename === 'Element')
+			(value as { __typename?: string }).__typename === 'Element' ||
+			(value as { __typename?: string }).__typename === 'ArrayResult')
 	) {
 		return (value as { value: unknown }).value;
 	}

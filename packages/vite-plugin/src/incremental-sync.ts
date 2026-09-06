@@ -50,11 +50,22 @@ export function mergeCollectionRecords(
 			continue;
 		}
 
-		merged.push(existing!);
+		merged.push(mergePreservingLocalAssets(existing!, fresh));
 		unchangedCount += 1;
 	}
 
 	return { merged, changed, unchangedCount, removedIds };
+}
+
+/** Keep downloaded `*_local` asset paths from the cached record onto freshly fetched data. */
+function mergePreservingLocalAssets(existing: PatStoreObject, fresh: PatStoreObject): PatStoreObject {
+	const next: PatStoreObject = { ...fresh };
+	for (const [key, value] of Object.entries(existing)) {
+		if (key.endsWith('_local')) {
+			next[key] = value;
+		}
+	}
+	return next;
 }
 
 function extractAssetFilenames(value: unknown): string[] {

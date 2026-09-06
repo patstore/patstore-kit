@@ -2,6 +2,7 @@ import { GraphQLClient } from 'graphql-request';
 import { fetchModulesGraphQL } from './fetch-modules.js';
 import { getCollectionKey } from '../collection-keys.js';
 import { readPatStoreEnv } from '../env.js';
+import { isMissingCategoriesFieldError, stripCategoriesSelection } from '../planner/field-selection.js';
 import type { GraphQLListVariables, PatStoreModule, PatStoreObject } from '../types.js';
 
 let graphqlClient: GraphQLClient | null = null;
@@ -53,15 +54,22 @@ export async function graphqlFind<T extends PatStoreObject>(
 		}
 	`;
 
-	const data = await client.request<Record<string, { edges: { node: T }[] }>>(query, {
-		params: variables.params ?? {},
-		first: variables.first ?? 100,
-		skip: variables.skip ?? 0,
-		order: variables.order ?? ['createdAt_DESC'],
-	});
+	try {
+		const data = await client.request<Record<string, { edges: { node: T }[] }>>(query, {
+			params: variables.params ?? {},
+			first: variables.first ?? 100,
+			skip: variables.skip ?? 0,
+			order: variables.order ?? ['createdAt_DESC'],
+		});
 
-	const connection = data[queryName];
-	return connection?.edges?.map((edge) => edge.node) ?? [];
+		const connection = data[queryName];
+		return connection?.edges?.map((edge) => edge.node) ?? [];
+	} catch (error) {
+		if (!isMissingCategoriesFieldError(error) || selection === stripCategoriesSelection(selection)) {
+			throw error;
+		}
+		return graphqlFind(className, collectionKey, stripCategoriesSelection(selection), variables);
+	}
 }
 
 export async function graphqlGet<T extends PatStoreObject>(
@@ -86,12 +94,19 @@ export async function graphqlGet<T extends PatStoreObject>(
 		}
 	`;
 
-	const data = await client.request<Record<string, { edges: { node: T }[] }>>(query, {
-		id: objectId,
-	});
+	try {
+		const data = await client.request<Record<string, { edges: { node: T }[] }>>(query, {
+			id: objectId,
+		});
 
-	const node = data[collectionKey]?.edges?.[0]?.node ?? null;
-	return node;
+		const node = data[collectionKey]?.edges?.[0]?.node ?? null;
+		return node;
+	} catch (error) {
+		if (!isMissingCategoriesFieldError(error) || selection === stripCategoriesSelection(selection)) {
+			throw error;
+		}
+		return graphqlGet(className, objectId, stripCategoriesSelection(selection));
+	}
 }
 
 export function resolveFileUrl(url: string): string {
