@@ -124,8 +124,8 @@ function typescriptTypeForFieldType(type: ModuleFieldType, fieldId: string): str
 	if (type === 'category') {
 		return 'PatStoreCategoryRef | null';
 	}
-	if (type === 'categories') {
-		return 'PatStoreCategoryRef[] | null';
+	if (type === 'categories' || fieldId === 'categories') {
+		return 'string[] | null';
 	}
 	if (type === 'gallery') {
 		return 'PatStoreFile[] | null';
@@ -197,7 +197,7 @@ function collectFields(module: PatStoreModule): Array<{
 			id: 'categories',
 			label: 'Categories',
 			required: false,
-			tsType: 'PatStoreCategoryRef[] | null',
+			tsType: 'string[] | null',
 		});
 	}
 

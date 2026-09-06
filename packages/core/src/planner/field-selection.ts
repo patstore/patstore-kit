@@ -213,12 +213,12 @@ function moduleHasCategories(module: PatStoreModule): boolean {
 	return Array.isArray(module.categories) && module.categories.length > 0;
 }
 
-/** Relation field on the connected class when the Module defines category groups. */
+/** Array of category ids on the connected class (`ArrayResult` / Element values). */
 function categoriesArraySelection(module: PatStoreModule): string {
 	if (!moduleHasCategories(module)) {
 		return '';
 	}
-	return 'categories { objectId label }';
+	return elementArraySelection('categories');
 }
 
 export function listFileFields(module: PatStoreModule): string[] {

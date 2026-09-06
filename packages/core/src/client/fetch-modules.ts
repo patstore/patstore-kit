@@ -49,7 +49,7 @@ export function normalizeModule(node: PatStoreObject): PatStoreModule {
 		connected_class: String(node.connected_class ?? ''),
 		fields,
 		data_fields,
-		categories,
+		categories
 	};
 }
 
