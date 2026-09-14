@@ -59,5 +59,6 @@ export function octanePagesPlugin(options: OctanePagesPluginOptions = {}): Plugi
 }
 
 export { generateRoutes } from './generate-routes.js';
+export { cmsPathForPattern } from './cms-path.js';
 export { scanPagesDir, filePathToRoutePattern, importAliasForRoute, routeSegmentsToPatterns, patternToRouteId, fileToImportAlias, OPTIONAL_LANG_DIR } from './scan-pages.js';
 export type { ScannedPageRoute, ScannedPages } from './scan-pages.js';

@@ -18,7 +18,7 @@ function renderRouteMatchBlock(routes: ScannedPageRoute[]): string {
 		lines.push('\t{');
 		lines.push(`\t\tconst params = matchRoutePattern('${route.pattern}', normalized);`);
 		lines.push('\t\tif (params) {');
-		lines.push(`\t\t\treturn { id: '${route.id}', params };`);
+		lines.push(`\t\t\treturn { id: '${route.id}', pattern: '${route.pattern}', params };`);
 		lines.push('\t\t}');
 		lines.push('\t}');
 		lines.push('');
@@ -102,6 +102,8 @@ export function generateRoutes(options: GenerateRoutesOptions): void {
 
 export interface RouteMatch {
 	id: string;
+	/** Route pattern this match resolved against, e.g. /athletes/$slug. */
+	pattern: string;
 	params: Record<string, string>;
 }
 
@@ -173,6 +175,23 @@ export function matchRoutePattern(pattern: string, pathname: string): Record<str
 
 export function matchRoute(pathname: string): RouteMatch | null {
 ${renderRouteMatchBlock(scanned.routes)}
+}
+
+function cmsPathForPattern(pattern: string): string | null {
+	const segments = pattern.split('/').filter(Boolean);
+	if (segments.at(-1) === '$') {
+		return null;
+	}
+	const stripped = segments.filter((segment) => segment !== '$lang');
+	return stripped.length === 0 ? '/' : \`/\${stripped.join('/')}\`;
+}
+
+export function cmsContentPath(pathname: string): string {
+	const match = matchRoute(pathname);
+	if (!match) {
+		return normalizeRoutePath(pathname);
+	}
+	return cmsPathForPattern(match.pattern) ?? normalizeRoutePath(pathname);
 }
 `;
 

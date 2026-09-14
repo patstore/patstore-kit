@@ -1,31 +1,16 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { scanPagesDir, type ScannedPageRoute } from '@patstore/octane-pages-plugin';
+import { cmsPathForPattern, scanPagesDir, type ScannedPageRoute } from '@patstore/octane-pages-plugin';
 import { scanTsrxContent } from './scan-content.js';
 import { extractImportSpecifiers, resolveImportSpecifier } from './resolve-imports.js';
 import type { CmsManifest, CmsPageManifest } from './types.js';
 
-/**
- * Strips a lone `$lang` segment from a route pattern to get its canonical,
- * language-agnostic path (e.g. `/$lang/artikel` → `/artikel`). Returns
- * `null` when the pattern has *other* dynamic segments (`$post_id`, splat)
- * — those belong to PatStore collections, not page-level CMS content.
- */
-function canonicalizePattern(pattern: string): string | null {
-	const segments = pattern.split('/').filter(Boolean);
-	if (segments.some((segment) => segment.startsWith('$') && segment !== '$lang')) {
-		return null;
-	}
-	const stripped = segments.filter((segment) => segment !== '$lang');
-	return stripped.length === 0 ? '/' : `/${stripped.join('/')}`;
-}
-
-/** Picks the first route pattern (across a file's `(lang)/`/`$lang/` variants) that resolves to a canonical path. */
-function canonicalPathForFile(routes: ScannedPageRoute[]): string | null {
+/** Picks the first route pattern (across a file's `(lang)/`/`$lang/` variants) that resolves to a CMS path. */
+function cmsPathForFile(routes: ScannedPageRoute[]): string | null {
 	for (const route of routes) {
-		const canonical = canonicalizePattern(route.pattern);
-		if (canonical) {
-			return canonical;
+		const cmsPath = cmsPathForPattern(route.pattern);
+		if (cmsPath) {
+			return cmsPath;
 		}
 	}
 	return null;
@@ -74,12 +59,12 @@ function scanFileWithImports(
 /**
  * Scans `src/pages/**\/*.tsrx` (and every local component they import,
  * transitively) for CMS marker components and builds a manifest keyed by
- * canonical, language-agnostic path. A page's `(lang)/` / `$lang/` prefix
- * variants collapse into a single manifest entry — language differentiation
- * happens at sync time via PatStore's `lang` field, not via separate paths.
- * Routes with *other* dynamic segments (`$post_id`, splat) are skipped —
- * page-level CMS content only applies to static routes; per-record content
- * belongs to PatStore collections instead.
+ * CMS content path. A page's `(lang)/` / `$lang/` prefix variants collapse
+ * into a single manifest entry — language differentiation happens at sync
+ * time via PatStore's `lang` field, not via separate paths. Dynamic segments
+ * other than `$lang` are kept as template literals (e.g. `/athletes/$slug`)
+ * so one `Webpage` record can hold shared copy for every slug instance.
+ * Splat routes (`.../$`) are skipped.
  *
  * `aliases` (alias prefix → absolute file path, e.g. from Vite's resolved
  * `resolve.alias`) lets the import-follower resolve `@content`/`@ui`/etc.
@@ -98,8 +83,8 @@ export function buildManifest(pagesDir: string, aliases: Record<string, string> 
 	}
 
 	for (const [file, fileRoutes] of routesByFile) {
-		const canonicalPath = canonicalPathForFile(fileRoutes);
-		if (!canonicalPath) {
+		const cmsPath = cmsPathForFile(fileRoutes);
+		if (!cmsPath) {
 			continue;
 		}
 
@@ -107,7 +92,7 @@ export function buildManifest(pagesDir: string, aliases: Record<string, string> 
 		const fields = scanFileWithImports(absolutePath, aliases, cache);
 
 		if (Object.keys(fields).length > 0) {
-			pages[canonicalPath] = fields;
+			pages[cmsPath] = fields;
 		}
 	}
 
