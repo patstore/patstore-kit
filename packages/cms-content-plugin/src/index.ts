@@ -6,6 +6,7 @@ import { writeContentArtifacts, writeStubContentArtifacts } from './codegen.js';
 import { contentMapFromDefaults, syncManifestToPatStore } from './sync.js';
 import { flattenManifestToPaths } from './flatten.js';
 import type { CmsRestEnv } from './patstore-rest.js';
+import { aliasesFromViteConfig } from './vite-aliases.js';
 
 export interface CmsContentPluginOptions {
 	/** Directory containing route page files. Default: `src/pages` */

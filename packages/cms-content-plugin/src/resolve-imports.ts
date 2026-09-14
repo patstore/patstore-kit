@@ -27,6 +27,18 @@ function tryResolveFile(basePath: string): string | null {
 	return null;
 }
 
+/** Base directory for `@alias/subpath` — the alias target when it is a folder, otherwise its parent dir. */
+function aliasSubpathBase(target: string): string {
+	try {
+		if (fs.existsSync(target) && fs.statSync(target).isDirectory()) {
+			return target;
+		}
+	} catch {
+		// Missing path on disk — fall back to dirname (file-style alias target).
+	}
+	return path.dirname(target);
+}
+
 /**
  * Resolves an import specifier from `importingFile` to an absolute local
  * `.ts`/`.tsrx` file, or `null` when it isn't a local file (bare package
