@@ -1,6 +1,6 @@
 {
   "name": "@patstore/octane-pages-plugin",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "File-based routing Vite plugin for Octane apps — TanStack Start-style pages/ conventions",
   "type": "module",
   "license": "UNLICENSED",

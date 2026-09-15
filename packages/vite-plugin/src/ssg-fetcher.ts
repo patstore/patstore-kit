@@ -62,6 +62,26 @@ function normalizeRecord(record: PatStoreObject): PatStoreObject {
 	return next;
 }
 
+/** True when the module schema exposes an active `state` field (draft / published). */
+function moduleHasActiveStateField(module: PatStoreModule): boolean {
+	return module.fields.some((field) => field.active && field.id === 'state');
+}
+
+/**
+ * SSG query params — published-only when the module has an active `state` field.
+ * Runtime GraphQL fetches are unchanged and may include all states.
+ */
+function buildSsgQueryParams(
+	env: PatStoreBuildEnv,
+	module: PatStoreModule,
+): Record<string, unknown> {
+	const params = defaultProjectFilter(env.projectId);
+	if (!moduleHasActiveStateField(module)) {
+		return params;
+	}
+	return { ...params, state: { equalTo: 'published' } };
+}
+
 async function fetchCollection(
 	env: PatStoreBuildEnv,
 	client: GraphQLClient,
@@ -70,7 +90,7 @@ async function fetchCollection(
 ): Promise<PatStoreObject[]> {
 	const collectionKey = getCollectionKey(className);
 	let selection = buildSelectionFromModule(module, ['objectId', 'createdAt', 'updatedAt']);
-	const params = defaultProjectFilter(env.projectId);
+	const params = buildSsgQueryParams(env, module);
 
 	const runQuery = async (fieldSelection: string): Promise<PatStoreObject[]> => {
 		const query = `
@@ -210,7 +230,10 @@ export async function fetchBuildTimeData(
 		const storageKey = getStorageKey(className);
 		activeStorageKeys.add(storageKey);
 
-		console.log(`   Fetching ${className} → ${storageKey}…`);
+		const stateFilter = moduleHasActiveStateField(module);
+		console.log(
+			`   Fetching ${className} → ${storageKey}…${stateFilter ? ' (published only)' : ''}`,
+		);
 		const freshRecords = await fetchCollection(env, client, className, module);
 		const existingRecords = existing?.[storageKey] as PatStoreObject[] | undefined;
 		const { merged, changed, unchangedCount, removedIds } = mergeCollectionRecords(
