@@ -2,7 +2,7 @@ export type * from './types.js';
 export { readPatStoreEnv, isPatStoreConfigured } from './env.js';
 export type { PatStoreClientEnv } from './env.js';
 
-export { getCollectionKey, getStorageKey } from './collection-keys.js';
+export { getCollectionKey, getStorageKey, shouldFetchStaticCollection } from './collection-keys.js';
 export {
 	loadModuleRegistry,
 	getModuleRegistry,

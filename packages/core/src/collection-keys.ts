@@ -27,3 +27,10 @@ export function getCollectionKey(className: string): string {
 export function getStorageKey(className: string): string {
 	return getCollectionKey(className);
 }
+
+const SKIP_STATIC_CLASSES = new Set(['User', '_User']);
+
+/** User / `_User` is never written into SSG static data. */
+export function shouldFetchStaticCollection(className: string): boolean {
+	return Boolean(className) && !SKIP_STATIC_CLASSES.has(className);
+}

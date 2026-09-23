@@ -1,4 +1,4 @@
-import { getStorageKey } from '../collection-keys.js';
+import { getStorageKey, shouldFetchStaticCollection } from '../collection-keys.js';
 import { isFileField, isUserPointerField, shouldSelectClassCategories } from '../planner/field-selection.js';
 import type { DataField, ModuleField, ModuleFieldType, PatStoreModule } from '../types.js';
 
@@ -54,7 +54,6 @@ const HELPER_TYPE_IMPORTS = {
 	PatStoreFile: true,
 	PatStorePersonRef: true,
 	PatStoreCategoryRef: true,
-	PatStoreUserRef: true,
 	PatStoreGeoPoint: true,
 	PatStoreObject: true,
 } as const;
@@ -78,7 +77,7 @@ export function listPatstoreTypeEntries(modules: PatStoreModule[]): PatstoreType
 
 	for (const module of modules) {
 		const className = module.connected_class?.trim();
-		if (!className || seen.has(className)) {
+		if (!className || seen.has(className) || !shouldFetchStaticCollection(className)) {
 			continue;
 		}
 		seen.add(className);
@@ -115,9 +114,6 @@ function typescriptTypeForFieldType(type: ModuleFieldType, fieldId: string): str
 	if (type === 'person' || type === 'edit_person') {
 		return 'PatStorePersonRef | null';
 	}
-	if (isUserPointerField({ id: fieldId, type })) {
-		return 'PatStoreUserRef | null';
-	}
 	if (type === 'edit_persons' || type === 'edit_team' || type === 'persons') {
 		return 'PatStorePersonRef[] | null';
 	}
@@ -141,7 +137,7 @@ function typescriptTypeForFieldType(type: ModuleFieldType, fieldId: string): str
 
 export function typescriptTypeForField(field: ModuleField): string {
 	if (isUserPointerField(field)) {
-		return 'PatStoreUserRef | null';
+		return 'unknown';
 	}
 	if (isFileField(field) && field.type !== 'documents' && field.id !== 'documents') {
 		return 'PatStoreFile | null';
@@ -163,7 +159,14 @@ function collectFields(module: PatStoreModule): Array<{
 
 	const fields = Array.isArray(module.fields) ? module.fields : [];
 	const sorted = [...fields]
-		.filter((field) => field && field.active !== false && field.id && !SKIP_FIELD_IDS.has(field.id))
+		.filter(
+			(field) =>
+				field &&
+				field.active !== false &&
+				field.id &&
+				!SKIP_FIELD_IDS.has(field.id) &&
+				!isUserPointerField(field),
+		)
 		.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
 	for (const field of sorted) {
@@ -179,16 +182,14 @@ function collectFields(module: PatStoreModule): Array<{
 	const dataFields: DataField[] = Array.isArray(module.data_fields) ? module.data_fields : [];
 	for (const field of dataFields) {
 		const id = field.name || field.id;
-		if (!id || SKIP_FIELD_IDS.has(id) || byId.has(id)) {
+		if (!id || SKIP_FIELD_IDS.has(id) || byId.has(id) || isUserPointerField({ id, type: field.type, name: field.name })) {
 			continue;
 		}
 		byId.set(id, {
 			id,
 			label: field.label || id,
 			required: false,
-			tsType: isUserPointerField({ id, type: field.type, name: field.name })
-				? 'PatStoreUserRef | null'
-				: typescriptTypeForFieldType(field.type, id),
+			tsType: typescriptTypeForFieldType(field.type, id),
 		});
 	}
 

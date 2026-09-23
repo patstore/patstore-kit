@@ -80,14 +80,10 @@ function normalizeFieldToken(value: unknown): string {
 	return typeof value === 'string' ? value.trim().toLowerCase().replace(/^_/, '') : '';
 }
 
-/** `_User` pointer fields — GraphQL type is `User`, not a scalar. */
+/** `_User` pointer fields (`user` / `created_by` / `updated_by`) — never selected. */
 export function isUserPointerField(field: { id?: string; type?: string; name?: string }): boolean {
 	const tokens = [field.id, field.type, field.name].map(normalizeFieldToken);
 	return tokens.some((token) => USER_POINTER_TOKENS.has(token));
-}
-
-function userPointerSelection(fieldId: string): string {
-	return `${fieldId} { objectId label }`;
 }
 
 function fileSelection(fieldId: string): string {
@@ -129,12 +125,8 @@ export function isSupportedFieldType(type: ModuleFieldType): boolean {
 }
 
 export function selectionForField(field: ModuleField, _className?: string): string {
-	if (!field.active || SKIP_FIELD_IDS.has(field.id)) {
+	if (!field.active || SKIP_FIELD_IDS.has(field.id) || isUserPointerField(field)) {
 		return '';
-	}
-
-	if (isUserPointerField(field)) {
-		return userPointerSelection(field.id);
 	}
 
 	if (FILE_FIELD_IDS.has(field.id) || FILE_FIELD_TYPES.has(field.type)) {
@@ -178,7 +170,12 @@ export function selectionForField(field: ModuleField, _className?: string): stri
 
 export function listUnsupportedFields(module: PatStoreModule): ModuleField[] {
 	return module.fields.filter(
-		(field) => field.active && !SKIP_FIELD_IDS.has(field.id) && !isSupportedFieldType(field.type) && !FILE_FIELD_IDS.has(field.id),
+		(field) =>
+			field.active &&
+			!SKIP_FIELD_IDS.has(field.id) &&
+			!isUserPointerField(field) &&
+			!isSupportedFieldType(field.type) &&
+			!FILE_FIELD_IDS.has(field.id),
 	);
 }
 
@@ -197,13 +194,22 @@ export function buildSelectionFromModule(module: PatStoreModule, extraFields: st
 	}
 
 	const fromModule = activeFields
-		.filter((field) => !(shouldSelectClassCategories(className) && field.id === 'categories'))
+		.filter(
+			(field) =>
+				!isUserPointerField(field) &&
+				!(shouldSelectClassCategories(className) && field.id === 'categories'),
+		)
 		.map((field) => selectionForField(field, className))
 		.filter(Boolean)
 		.join('\n');
 
 	const extras = extraFields
-		.filter((field) => field && !(shouldSelectClassCategories(className) && field === 'categories'))
+		.filter(
+			(field) =>
+				field &&
+				!isUserPointerField({ id: field }) &&
+				!(shouldSelectClassCategories(className) && field === 'categories'),
+		)
 		.join('\n');
 
 	return [fromModule, categoriesArraySelection(className), extras].filter(Boolean).join('\n');

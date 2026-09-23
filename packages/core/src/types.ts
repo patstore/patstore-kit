@@ -77,7 +77,7 @@ export interface PatStoreCategoryRef {
 	label?: string;
 }
 
-/** Pointer to `_User` (`user` / `created_by` / `updated_by`). */
+/** Pointer to `_User` (`user` / `created_by` / `updated_by`). Not queried or stored in static data. */
 export interface PatStoreUserRef {
 	objectId: string;
 	label?: string;

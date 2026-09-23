@@ -6,6 +6,7 @@ import {
 	getCollectionKey,
 	getStorageKey,
 	isMissingCategoriesFieldError,
+	shouldFetchStaticCollection,
 	stripCategoriesSelection,
 } from '@patstore/core';
 import type { PatStoreModule, PatStoreObject } from '@patstore/core';
@@ -226,6 +227,11 @@ export async function fetchBuildTimeData(
 			continue;
 		}
 		seen.add(className);
+
+		if (!shouldFetchStaticCollection(className)) {
+			console.log(`   Skipping ${className} — not stored in static data`);
+			continue;
+		}
 
 		const storageKey = getStorageKey(className);
 		activeStorageKeys.add(storageKey);
