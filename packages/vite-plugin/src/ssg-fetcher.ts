@@ -6,6 +6,7 @@ import {
 	getCollectionKey,
 	getStorageKey,
 	isMissingCategoriesFieldError,
+	normalizeRecord,
 	shouldFetchStaticCollection,
 	stripCategoriesSelection,
 } from '@patstore/core';
@@ -36,31 +37,6 @@ export interface FetchBuildTimeDataOptions {
 	downloadAssets?: boolean;
 	existingData?: BuildTimeData | null;
 	assetsDir?: string;
-}
-
-function unwrapElement(value: unknown): unknown {
-	if (
-		value &&
-		typeof value === 'object' &&
-		'value' in value &&
-		(typeof (value as { __typename?: string }).__typename === 'undefined' ||
-			(value as { __typename?: string }).__typename === 'Element')
-	) {
-		return (value as { value: unknown }).value;
-	}
-	return value;
-}
-
-function normalizeRecord(record: PatStoreObject): PatStoreObject {
-	const next: PatStoreObject = { ...record };
-	for (const [key, value] of Object.entries(next)) {
-		if (Array.isArray(value)) {
-			next[key] = value.map((entry) => unwrapElement(entry));
-		} else {
-			next[key] = unwrapElement(value);
-		}
-	}
-	return next;
 }
 
 /** True when the module schema exposes an active `state` field (draft / published). */

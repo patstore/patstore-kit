@@ -1,20 +1,7 @@
 import type { GraphQLClient } from 'graphql-request';
 import type { DataField, ModuleCategory, PatStoreModule, PatStoreObject } from '../types.js';
 import { defaultProjectFilter, MODULE_GRAPHQL_SELECTION } from '../planner/field-selection.js';
-
-function unwrapElement(value: unknown): unknown {
-	if (
-		value &&
-		typeof value === 'object' &&
-		'value' in value &&
-		(typeof (value as { __typename?: string }).__typename === 'undefined' ||
-			(value as { __typename?: string }).__typename === 'Element' ||
-			(value as { __typename?: string }).__typename === 'ArrayResult')
-	) {
-		return (value as { value: unknown }).value;
-	}
-	return value;
-}
+import { unwrapElement } from './normalize-record.js';
 
 export function normalizeModule(node: PatStoreObject): PatStoreModule {
 	const fieldsRaw = node.fields;

@@ -20,6 +20,11 @@ export {
 	graphqlGet,
 	resolveFileUrl,
 } from './client/patstore-client.js';
+export {
+	unwrapElement,
+	normalizeGraphQLValue,
+	normalizeRecord,
+} from './client/normalize-record.js';
 
 export {
 	MODULE_GRAPHQL_SELECTION,

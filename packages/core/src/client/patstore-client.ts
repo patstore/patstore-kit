@@ -1,5 +1,6 @@
 import { GraphQLClient } from 'graphql-request';
 import { fetchModulesGraphQL } from './fetch-modules.js';
+import { normalizeRecord } from './normalize-record.js';
 import { getCollectionKey } from '../collection-keys.js';
 import { readPatStoreEnv } from '../env.js';
 import { isMissingCategoriesFieldError, stripCategoriesSelection } from '../planner/field-selection.js';
@@ -63,7 +64,7 @@ export async function graphqlFind<T extends PatStoreObject>(
 		});
 
 		const connection = data[queryName];
-		return connection?.edges?.map((edge) => edge.node) ?? [];
+		return connection?.edges?.map((edge) => normalizeRecord(edge.node)) ?? [];
 	} catch (error) {
 		if (!isMissingCategoriesFieldError(error) || selection === stripCategoriesSelection(selection)) {
 			throw error;
@@ -100,7 +101,7 @@ export async function graphqlGet<T extends PatStoreObject>(
 		});
 
 		const node = data[collectionKey]?.edges?.[0]?.node ?? null;
-		return node;
+		return node ? normalizeRecord(node) : null;
 	} catch (error) {
 		if (!isMissingCategoriesFieldError(error) || selection === stripCategoriesSelection(selection)) {
 			throw error;

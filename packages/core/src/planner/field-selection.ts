@@ -146,7 +146,7 @@ export function selectionForField(field: ModuleField, _className?: string): stri
 	}
 
 	if (field.type === 'person' || field.type === 'edit_person') {
-		return `${field.id} { objectId label portrait { name url } }`;
+		return `${field.id} { objectId label image }`;
 	}
 
 	if (field.type === 'category') {
