@@ -59,9 +59,8 @@ export interface CmsContentMap {
 		languages: string[];
 	};
 	/**
-	 * Path → `page_content`. Always includes `default`, plus one key per
-	 * configured locale (`de-DE`). `default` is the copy used when no locale
-	 * is set or the project has a single language.
+	 * Path → flat `page_data` map. Locale lives in the path (`de-DE.home_start.title`);
+	 * paths without a locale prefix are the default values.
 	 */
-	pages: Record<string, LocalizedPageContent>;
+	pages: Record<string, CmsPageContent>;
 }

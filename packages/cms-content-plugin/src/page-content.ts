@@ -1,6 +1,5 @@
-import { pathValuesToMap } from './flatten.js';
-import { DEFAULT_PAGE_CONTENT_KEY, pageContentKeys } from './locale.js';
-import type { CmsFieldNode, CmsNode, CmsPageManifest, CmsPathValue, LocalizedPageContent } from './types.js';
+import { pageContentKeys } from './locale.js';
+import type { CmsFieldNode, CmsNode, CmsPageManifest, LocalizedPageContent } from './types.js';
 import { isSectionNode } from './types.js';
 
 export type { LocalizedPageContent };
@@ -122,40 +121,4 @@ export function buildLocalizedPageContent(
 		localized[key] = mergePageManifest(scanned, previous?.[key]);
 	}
 	return localized;
-}
-
-function applyValues(nodes: Record<string, CmsNode>, values: Record<string, unknown>, prefix: string): Record<string, CmsNode> {
-	const next: Record<string, CmsNode> = {};
-	for (const [key, node] of Object.entries(nodes)) {
-		const path = prefix ? `${prefix}.${key}` : key;
-		if (isSectionNode(node)) {
-			next[key] = { ...node, content: applyValues(node.content, values, path) };
-			continue;
-		}
-		if (Object.prototype.hasOwnProperty.call(values, path)) {
-			next[key] = { ...node, default: values[path] };
-			continue;
-		}
-		next[key] = node;
-	}
-	return next;
-}
-
-/**
- * Artifact written for the site. `default` (and locales that still match the
- * scan) take edited `page_data` values. A locale whose schema was edited in
- * the CMS keeps those defaults so each language can be fetched on its own.
- */
-export function resolveLocalizedPageContent(
-	scanned: CmsPageManifest,
-	localized: LocalizedPageContent,
-	pageData: CmsPathValue[],
-): LocalizedPageContent {
-	const values = pathValuesToMap(pageData);
-	const resolved = {} as LocalizedPageContent;
-	for (const [key, manifest] of Object.entries(localized)) {
-		const useEditedValues = key === DEFAULT_PAGE_CONTENT_KEY || schemasEqual(manifest, scanned);
-		resolved[key] = useEditedValues ? (applyValues(manifest, values, '') as CmsPageManifest) : manifest;
-	}
-	return resolved;
 }

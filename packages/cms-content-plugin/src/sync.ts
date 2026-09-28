@@ -1,6 +1,6 @@
-import { flattenManifestToPaths } from './flatten.js';
+import { flattenManifestToPaths, pathValuesToMap } from './flatten.js';
 import { toLocale } from './locale.js';
-import { buildLocalizedPageContent, resolveLocalizedPageContent, schemasEqual } from './page-content.js';
+import { buildLocalizedPageContent, schemasEqual } from './page-content.js';
 import type { CmsContentMap, CmsManifest, CmsPathValue } from './types.js';
 import { fetchProjectLanguages, findWebpageByPath, updateWebpage, type CmsRestEnv } from './patstore-rest.js';
 
@@ -30,10 +30,9 @@ export interface SyncManifestOptions {
 
 /**
  * For each scanned page, find its single `Webpage` record by `project` + `path`.
- * `page_content` is stored as `{ default, "de-DE", ... }`. `default` is what
- * the site reads when the project has no locales or only one.
- * Field defaults already edited for a locale are kept. `page_data` only gains
- * newly discovered paths.
+ * PatStore `page_content` is stored as `{ default, "de-DE", ... }`.
+ * The returned map is `page_data` as stored: `{ path: value }`, with the locale
+ * already in the path (`de-DE.home_start.title`). `page_data` only gains newly discovered paths.
  */
 export async function syncManifestToPatStore(options: SyncManifestOptions): Promise<CmsContentMap> {
 	const log = options.log ?? (() => {});
@@ -76,23 +75,22 @@ export async function syncManifestToPatStore(options: SyncManifestOptions): Prom
 				}
 			}
 
-			contentMap.pages[pagePath] = resolveLocalizedPageContent(pageManifest, localizedSchema, merged);
+			contentMap.pages[pagePath] = pathValuesToMap(merged);
 		} catch (error) {
 			log(`sync failed for "${pagePath}" — using scanned defaults: ${(error as Error).message}`);
-			contentMap.pages[pagePath] = buildLocalizedPageContent(pageManifest, null, locales);
+			contentMap.pages[pagePath] = pathValuesToMap(defaults);
 		}
 	}
 
 	return contentMap;
 }
 
-/** Used when PatStore isn't configured — scanned schema under `default` and the default locale. */
+/** Used when PatStore isn't configured — scanned defaults as a flat `page_data` map. */
 export function contentMapFromDefaults(manifest: CmsManifest, defaultLang: string): CmsContentMap {
 	const locale = toLocale(defaultLang);
 	const pages: CmsContentMap['pages'] = {};
 	for (const [pagePath, pageManifest] of Object.entries(manifest.pages)) {
-		pages[pagePath] =
-			locale === 'default' ? { default: pageManifest } : { default: pageManifest, [locale]: pageManifest };
+		pages[pagePath] = pathValuesToMap(flattenManifestToPaths(pageManifest));
 	}
 	return {
 		_meta: {

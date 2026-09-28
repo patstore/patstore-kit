@@ -13,7 +13,7 @@ function generateContentData(): string {
 import content from './cms-content.json';
 
 export interface CmsContentPages {
-	[path: string]: Record<string, Record<string, unknown>>;
+	[path: string]: Record<string, unknown>;
 }
 
 interface CmsContentFile {
@@ -42,28 +42,36 @@ function toLocale(value: string): string {
 	return \`\${language}-\${region}\`;
 }
 
+const LOCALE_PATH = /^[a-z]{2}-[A-Z]{2}\\./;
+
 /**
- * Resolves \`pagePath\`'s \`page_content\` for \`locale\` (\`de-DE\`).
- * Uses \`default\` when the project has no languages or only one.
+ * Resolves \`pagePath\`'s \`page_data\` for \`locale\`. Paths are stored as they
+ * come from the server (\`home_start.title\`, \`de-DE.home_start.title\`).
+ * Unprefixed paths are the default; a locale prefix overrides that path.
+ * With no languages or only one, only the unprefixed paths are returned.
  */
 export function getPageContent(pagePath: string, locale: string): Record<string, unknown> {
 	const page = data.pages[pagePath];
 	if (!page) {
 		return {};
 	}
+	const resolved: Record<string, unknown> = {};
+	for (const [path, value] of Object.entries(page)) {
+		if (!LOCALE_PATH.test(path)) {
+			resolved[path] = value;
+		}
+	}
 	const languages = data._meta?.languages ?? [];
 	if (languages.length <= 1) {
-		return page.default ?? {};
+		return resolved;
 	}
-	const normalized = toLocale(locale);
-	if (page[normalized]) {
-		return page[normalized];
+	const prefix = \`\${toLocale(locale)}.\`;
+	for (const [path, value] of Object.entries(page)) {
+		if (path.startsWith(prefix)) {
+			resolved[path.slice(prefix.length)] = value;
+		}
 	}
-	if (page.default) {
-		return page.default;
-	}
-	const fallback = Object.keys(page)[0];
-	return fallback ? page[fallback] : {};
+	return resolved;
 }
 
 export function getAllPageContent(): CmsContentPages {
