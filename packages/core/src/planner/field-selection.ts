@@ -172,6 +172,7 @@ export function listUnsupportedFields(module: PatStoreModule): ModuleField[] {
 	return module.fields.filter(
 		(field) =>
 			field.active &&
+			field.id !== 'translations' &&
 			!SKIP_FIELD_IDS.has(field.id) &&
 			!isUserPointerField(field) &&
 			!isSupportedFieldType(field.type) &&
@@ -196,6 +197,7 @@ export function buildSelectionFromModule(module: PatStoreModule, extraFields: st
 	const fromModule = activeFields
 		.filter(
 			(field) =>
+				field.id !== 'translations' &&
 				!isUserPointerField(field) &&
 				!(shouldSelectClassCategories(className) && field.id === 'categories'),
 		)
@@ -207,12 +209,13 @@ export function buildSelectionFromModule(module: PatStoreModule, extraFields: st
 		.filter(
 			(field) =>
 				field &&
+				field !== 'translations' &&
 				!isUserPointerField({ id: field }) &&
 				!(shouldSelectClassCategories(className) && field === 'categories'),
 		)
 		.join('\n');
 
-	return [fromModule, categoriesArraySelection(className), extras].filter(Boolean).join('\n');
+	return [fromModule, categoriesArraySelection(className), translationsSelection(), extras].filter(Boolean).join('\n');
 }
 
 const SKIP_CLASS_CATEGORIES = new Set(['Module', 'Category']);
@@ -229,12 +232,24 @@ function categoriesArraySelection(className: string): string {
 	return elementArraySelection('categories');
 }
 
-export function stripCategoriesSelection(selection: string): string {
-	const match = selection.search(/\bcategories\s*\{/);
-	if (match < 0) {
-		return selection;
+/**
+ * Built-in class field — a JSON object keyed by locale. Not declared on the
+ * module, so it is selected for every class.
+ */
+export function translationsSelection(): string {
+	return elementArraySelection('translations');
+}
+
+function stripNamedSelection(selection: string, fieldName: string): string {
+	const match = new RegExp(`\\b${fieldName}\\s*\\{`).exec(selection);
+	if (!match) {
+		return selection
+			.split('\n')
+			.filter((line) => !new RegExp(`^\\s*${fieldName}\\s*$`).test(line))
+			.join('\n')
+			.trim();
 	}
-	const brace = selection.indexOf('{', match);
+	const brace = selection.indexOf('{', match.index);
 	let depth = 0;
 	for (let index = brace; index < selection.length; index++) {
 		if (selection[index] === '{') {
@@ -242,16 +257,42 @@ export function stripCategoriesSelection(selection: string): string {
 		} else if (selection[index] === '}') {
 			depth -= 1;
 			if (depth === 0) {
-				return `${selection.slice(0, match)}${selection.slice(index + 1)}`.trim();
+				return `${selection.slice(0, match.index)}${selection.slice(index + 1)}`.trim();
 			}
 		}
 	}
 	return selection;
 }
 
+export function stripCategoriesSelection(selection: string): string {
+	return stripNamedSelection(selection, 'categories');
+}
+
+export function stripTranslationsSelection(selection: string): string {
+	return stripNamedSelection(selection, 'translations');
+}
+
 export function isMissingCategoriesFieldError(error: unknown): boolean {
 	const message = error instanceof Error ? error.message : String(error);
 	return /Cannot query field ["']categories["']/i.test(message);
+}
+
+export function isMissingTranslationsFieldError(error: unknown): boolean {
+	const message = error instanceof Error ? error.message : String(error);
+	return /Cannot query field ["']translations["']/i.test(message);
+}
+
+/** Drops `categories` or `translations` when GraphQL reports that field is absent on the class. */
+export function selectionWithoutMissingField(selection: string, error: unknown): string | null {
+	if (isMissingCategoriesFieldError(error)) {
+		const next = stripCategoriesSelection(selection);
+		return next === selection ? null : next;
+	}
+	if (isMissingTranslationsFieldError(error)) {
+		const next = stripTranslationsSelection(selection);
+		return next === selection ? null : next;
+	}
+	return null;
 }
 
 export function listFileFields(module: PatStoreModule): string[] {

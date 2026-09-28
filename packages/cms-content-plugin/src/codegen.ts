@@ -27,17 +27,43 @@ export function isCmsContentReady(): boolean {
 	return Boolean(data._meta?.generatedAt);
 }
 
-/** Resolves \`pagePath\`'s content for \`lang\` — falls back to whichever language synced first when \`lang\` has no entry. */
-export function getPageContent(pagePath: string, lang: string): Record<string, unknown> {
+/** \`de\` → \`de-DE\`. \`default\` stays \`default\`. */
+function toLocale(value: string): string {
+	const trimmed = value.trim();
+	if (!trimmed || trimmed.toLowerCase() === 'default') {
+		return 'default';
+	}
+	const parts = trimmed.split(/[-_]/).filter(Boolean);
+	const language = parts[0]?.toLowerCase();
+	if (!language) {
+		return 'default';
+	}
+	const region = (parts[1] ?? parts[0]).toUpperCase();
+	return \`\${language}-\${region}\`;
+}
+
+/**
+ * Resolves \`pagePath\`'s \`page_content\` for \`locale\` (\`de-DE\`).
+ * Uses \`default\` when the project has no languages or only one.
+ */
+export function getPageContent(pagePath: string, locale: string): Record<string, unknown> {
 	const page = data.pages[pagePath];
 	if (!page) {
 		return {};
 	}
-	if (page[lang]) {
-		return page[lang];
+	const languages = data._meta?.languages ?? [];
+	if (languages.length <= 1) {
+		return page.default ?? {};
 	}
-	const fallbackLang = Object.keys(page)[0];
-	return fallbackLang ? page[fallbackLang] : {};
+	const normalized = toLocale(locale);
+	if (page[normalized]) {
+		return page[normalized];
+	}
+	if (page.default) {
+		return page.default;
+	}
+	const fallback = Object.keys(page)[0];
+	return fallback ? page[fallback] : {};
 }
 
 export function getAllPageContent(): CmsContentPages {

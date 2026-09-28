@@ -24,6 +24,16 @@ export function isSectionNode(node: CmsNode): node is CmsSectionNode {
 /** Top-level `data-cms-section` containers found in a page — fields outside any section are ignored. */
 export type CmsPageManifest = Record<string, CmsNode>;
 
+/**
+ * `page_content` for one path. `default` is always present and is the copy
+ * used when the project has no languages or only one. Each configured locale
+ * (`de-DE`) is stored beside it.
+ */
+export interface LocalizedPageContent {
+	default: CmsPageManifest;
+	[locale: string]: CmsPageManifest;
+}
+
 export interface CmsManifest {
 	pages: Record<string, CmsPageManifest>;
 }
@@ -45,9 +55,13 @@ export interface CmsContentMap {
 		generatedAt: string;
 		projectId: string;
 		source: 'cms' | 'defaults';
-		/** Languages synced this run — from `Project.settings.languages`, or `[defaultLang]` when absent. */
+		/** Locales synced this run (`de-DE`). A single entry when the project has one language, or none configured. */
 		languages: string[];
 	};
-	/** Path → language → resolved content for that page in that language. */
-	pages: Record<string, Record<string, CmsPageContent>>;
+	/**
+	 * Path → `page_content`. Always includes `default`, plus one key per
+	 * configured locale (`de-DE`). `default` is the copy used when no locale
+	 * is set or the project has a single language.
+	 */
+	pages: Record<string, LocalizedPageContent>;
 }

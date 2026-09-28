@@ -1,4 +1,5 @@
-import type { CmsPageManifest, CmsPathValue } from './types.js';
+import { toLocale } from './locale.js';
+import type { CmsPathValue, LocalizedPageContent } from './types.js';
 
 export interface CmsRestEnv {
 	apiUrl: string;
@@ -18,17 +19,15 @@ export interface CmsRestEnv {
 	 * Also used as the class name for the `Project.settings.languages` lookup.
 	 */
 	projectPointerClassName: string | null;
-	/** From `DEFAULT_LANG` — used as the sole language when `Project.settings.languages` is absent. */
+	/** From `DEFAULT_LANG` — locale used when `Project.settings.languages` is absent. */
 	defaultLang: string;
 }
 
 interface WebpageRecord {
 	objectId: string;
 	pageData: CmsPathValue[];
-	/** Raw current value of `schemaFieldName` — compared against the freshly scanned manifest to detect drift. */
+	/** Raw current value of `schemaFieldName` — compared against the locale-keyed schema to detect drift. */
 	schema: unknown;
-	/** The record's actual `lang` value — `null` when adopted from a legacy, pre-language record. */
-	lang: string | null;
 }
 
 function authHeaders(env: CmsRestEnv): Record<string, string> {
@@ -90,47 +89,24 @@ async function queryWebpage(env: CmsRestEnv, where: unknown): Promise<Record<str
 	return data.results?.[0] ?? null;
 }
 
-function toWebpageRecord(result: Record<string, unknown>, env: CmsRestEnv, lang: string | null): WebpageRecord {
+function toWebpageRecord(result: Record<string, unknown>, env: CmsRestEnv): WebpageRecord {
 	return {
 		objectId: String(result.objectId),
 		pageData: normalizePageData(result[env.fieldName]),
 		schema: result[env.schemaFieldName] ?? null,
-		lang,
 	};
 }
 
-/**
- * Finds a `Webpage` record by `project` + `path` + `lang`. When nothing
- * matches and `lang` is the default language, falls back to a record with
- * no `lang` set at all — a pre-language-support record created before this
- * field existed — and adopts it instead of creating a duplicate. The caller
- * is responsible for backfilling `lang` onto adopted records via `updateWebpage`.
- */
-export async function findWebpageByPath(
-	env: CmsRestEnv,
-	pagePath: string,
-	lang: string,
-): Promise<WebpageRecord | null> {
-	const exact = await queryWebpage(env, { project: projectFieldValue(env), path: pagePath, lang });
-	if (exact) {
-		return toWebpageRecord(exact, env, lang);
-	}
-
-	if (lang === env.defaultLang) {
-		const legacy = await queryWebpage(env, {
-			project: projectFieldValue(env),
-			path: pagePath,
-			lang: { $exists: false },
-		});
-		if (legacy) {
-			return toWebpageRecord(legacy, env, null);
-		}
-	}
-
-	return null;
+/** Finds the single `Webpage` record for `project` + `path`. Locales live on `page_content`, not on separate records. */
+export async function findWebpageByPath(env: CmsRestEnv, pagePath: string): Promise<WebpageRecord | null> {
+	const exact = await queryWebpage(env, { project: projectFieldValue(env), path: pagePath });
+	return exact ? toWebpageRecord(exact, env) : null;
 }
 
-/** Fetches `Project.settings.languages` — falls back to `[env.defaultLang]` when absent, empty, or unreadable. */
+/**
+ * Fetches `Project.settings.languages` as locales (`de` → `de-DE`).
+ * Falls back to `[toLocale(env.defaultLang)]` when absent, empty, or unreadable.
+ */
 export async function fetchProjectLanguages(env: CmsRestEnv): Promise<string[]> {
 	try {
 		const className = env.projectPointerClassName ?? 'Project';
@@ -141,19 +117,29 @@ export async function fetchProjectLanguages(env: CmsRestEnv): Promise<string[]> 
 		);
 		const languages = project.settings?.languages;
 		if (Array.isArray(languages) && languages.length > 0 && languages.every((lang) => typeof lang === 'string')) {
-			return languages as string[];
+			const locales = [
+				...new Set(
+					languages
+						.map((lang) => toLocale(lang))
+						.filter((locale) => locale !== 'default'),
+				),
+			];
+			if (locales.length > 0) {
+				return locales;
+			}
 		}
 	} catch {
 		// A missing/unreadable Project shouldn't break the sync — fall through to the default.
 	}
-	return [env.defaultLang];
+	const fallback = toLocale(env.defaultLang);
+	return fallback === 'default' ? [] : [fallback];
 }
 
-/** Updates whichever of `pageData` (edited values) / `schema` (editor field definitions) / `lang` (legacy backfill) are provided, in one PUT. */
+/** Updates whichever of `pageData` (edited values) / `schema` (locale-keyed `page_content`) are provided, in one PUT. */
 export async function updateWebpage(
 	env: CmsRestEnv,
 	objectId: string,
-	fields: { pageData?: CmsPathValue[]; schema?: CmsPageManifest; lang?: string },
+	fields: { pageData?: CmsPathValue[]; schema?: LocalizedPageContent },
 ): Promise<void> {
 	const body: Record<string, unknown> = {};
 	if (fields.pageData) {
@@ -161,9 +147,6 @@ export async function updateWebpage(
 	}
 	if (fields.schema) {
 		body[env.schemaFieldName] = fields.schema;
-	}
-	if (fields.lang) {
-		body.lang = fields.lang;
 	}
 	if (Object.keys(body).length === 0) {
 		return;

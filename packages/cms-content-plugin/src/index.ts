@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import type { Plugin } from 'vite';
 import { buildManifest, writeManifest } from './manifest.js';
 import { writeContentArtifacts, writeStubContentArtifacts } from './codegen.js';
+import { toLocale } from './locale.js';
 import { contentMapFromDefaults, syncManifestToPatStore } from './sync.js';
 import { flattenManifestToPaths } from './flatten.js';
 import type { CmsRestEnv } from './patstore-rest.js';
@@ -83,7 +84,7 @@ export function cmsContentPlugin(options: CmsContentPluginOptions = {}): Plugin 
 
 	const runPipeline = async () => {
 		const pagesDir = path.resolve(root, options.pagesDir ?? 'src/pages');
-		const defaultLang = resolvedEnv.DEFAULT_LANG ?? 'en';
+		const defaultLang = toLocale(resolvedEnv.DEFAULT_LANG ?? 'en');
 		const manifest = buildManifest(pagesDir, aliases);
 		writeManifest(outputDir, manifest);
 
@@ -175,8 +176,9 @@ export { buildManifest, writeManifest } from './manifest.js';
 export { scanTsrxContent } from './scan-content.js';
 export { extractImportSpecifiers, resolveImportSpecifier } from './resolve-imports.js';
 export { flattenManifestToPaths, pathValuesToMap } from './flatten.js';
+export { toLocale } from './locale.js';
 export { contentMapFromDefaults, syncManifestToPatStore } from './sync.js';
 export { writeContentArtifacts, writeStubContentArtifacts } from './codegen.js';
 export { fetchProjectLanguages } from './patstore-rest.js';
 export type { CmsRestEnv } from './patstore-rest.js';
-export type { CmsContentMap, CmsFieldNode, CmsManifest, CmsNode, CmsPageManifest, CmsPathValue, CmsSectionNode } from './types.js';
+export type { CmsContentMap, CmsFieldNode, CmsManifest, CmsNode, CmsPageManifest, CmsPathValue, CmsSectionNode, LocalizedPageContent } from './types.js';

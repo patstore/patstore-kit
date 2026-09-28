@@ -56,6 +56,7 @@ const HELPER_TYPE_IMPORTS = {
 	PatStoreCategoryRef: true,
 	PatStoreGeoPoint: true,
 	PatStoreObject: true,
+	ClassTranslation: true,
 } as const;
 
 export interface PatstoreTypeEntry {
@@ -201,6 +202,15 @@ function collectFields(module: PatStoreModule): Array<{
 			tsType: 'string[] | null',
 		});
 	}
+
+	// Built-in on every class — not driven by a module field.
+	byId.delete('translations');
+	byId.set('translations', {
+		id: 'translations',
+		label: 'Translations',
+		required: false,
+		tsType: 'ClassTranslation | null',
+	});
 
 	return [...byId.values()];
 }

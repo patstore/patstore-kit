@@ -55,6 +55,8 @@ export interface PatStoreObject {
 	objectId: string;
 	createdAt?: string;
 	updatedAt?: string;
+	/** Locale-keyed copy. Present on every class; empty when unset. */
+	translations?: ClassTranslation | null;
 	[key: string]: unknown;
 }
 
@@ -82,6 +84,28 @@ export interface PatStoreUserRef {
 	objectId: string;
 	label?: string;
 }
+
+/** Locale key for a {@link ClassTranslation} entry, e.g. `de-DE`. */
+export type LanguageValue = string;
+
+/** Copy stored on a class record for one locale. */
+export interface ClassTranslationEntry {
+	title?: string;
+	text?: string;
+	description?: string;
+	seo_title?: string;
+	seo_description?: string;
+	seo_keywords?: string;
+	seo_image?: string;
+}
+
+/**
+ * Built-in `translations` field on every class. Keyed by locale (`de-DE`),
+ * independent of module field definitions. Absent when the class has no translations.
+ */
+export type ClassTranslation = {
+	[key: LanguageValue]: ClassTranslationEntry;
+};
 
 export interface PatStoreGeoPoint {
 	latitude: number;

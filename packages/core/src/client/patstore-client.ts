@@ -3,7 +3,7 @@ import { fetchModulesGraphQL } from './fetch-modules.js';
 import { normalizeRecord } from './normalize-record.js';
 import { getCollectionKey } from '../collection-keys.js';
 import { readPatStoreEnv } from '../env.js';
-import { isMissingCategoriesFieldError, stripCategoriesSelection } from '../planner/field-selection.js';
+import { selectionWithoutMissingField } from '../planner/field-selection.js';
 import type { GraphQLListVariables, PatStoreModule, PatStoreObject } from '../types.js';
 
 let graphqlClient: GraphQLClient | null = null;
@@ -66,10 +66,11 @@ export async function graphqlFind<T extends PatStoreObject>(
 		const connection = data[queryName];
 		return connection?.edges?.map((edge) => normalizeRecord(edge.node)) ?? [];
 	} catch (error) {
-		if (!isMissingCategoriesFieldError(error) || selection === stripCategoriesSelection(selection)) {
+		const next = selectionWithoutMissingField(selection, error);
+		if (!next) {
 			throw error;
 		}
-		return graphqlFind(className, collectionKey, stripCategoriesSelection(selection), variables);
+		return graphqlFind(className, collectionKey, next, variables);
 	}
 }
 
@@ -103,10 +104,11 @@ export async function graphqlGet<T extends PatStoreObject>(
 		const node = data[collectionKey]?.edges?.[0]?.node ?? null;
 		return node ? normalizeRecord(node) : null;
 	} catch (error) {
-		if (!isMissingCategoriesFieldError(error) || selection === stripCategoriesSelection(selection)) {
+		const next = selectionWithoutMissingField(selection, error);
+		if (!next) {
 			throw error;
 		}
-		return graphqlGet(className, objectId, stripCategoriesSelection(selection));
+		return graphqlGet(className, objectId, next);
 	}
 }
 

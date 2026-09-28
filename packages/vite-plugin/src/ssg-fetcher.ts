@@ -5,10 +5,9 @@ import {
 	fetchModulesGraphQL,
 	getCollectionKey,
 	getStorageKey,
-	isMissingCategoriesFieldError,
 	normalizeRecord,
+	selectionWithoutMissingField,
 	shouldFetchStaticCollection,
-	stripCategoriesSelection,
 } from '@patstore/core';
 import type { PatStoreModule, PatStoreObject } from '@patstore/core';
 import { buildAuthHeaders, type PatStoreBuildEnv } from './build-env.js';
@@ -119,14 +118,16 @@ async function fetchCollection(
 		return results;
 	};
 
-	try {
-		return await runQuery(selection);
-	} catch (error) {
-		if (!isMissingCategoriesFieldError(error)) {
-			throw error;
+	while (true) {
+		try {
+			return await runQuery(selection);
+		} catch (error) {
+			const next = selectionWithoutMissingField(selection, error);
+			if (!next) {
+				throw error;
+			}
+			selection = next;
 		}
-		selection = stripCategoriesSelection(selection);
-		return runQuery(selection);
 	}
 }
 

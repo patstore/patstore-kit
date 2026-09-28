@@ -60,10 +60,11 @@ function scanFileWithImports(
  * Scans `src/pages/**\/*.tsrx` (and every local component they import,
  * transitively) for CMS marker components and builds a manifest keyed by
  * CMS content path. A page's `(lang)/` / `$lang/` prefix variants collapse
- * into a single manifest entry — language differentiation happens at sync
- * time via PatStore's `lang` field, not via separate paths. Dynamic segments
- * other than `$lang` are kept as template literals (e.g. `/athletes/$slug`)
- * so one `Webpage` record can hold shared copy for every slug instance.
+ * into a single manifest entry — one `Webpage` per path. Locale copy lives
+ * under keys such as `de-DE` on `page_content`, alongside `default` (used when
+ * the project has no languages or only one). Dynamic segments other than `$lang`
+ * are kept as template literals (e.g. `/athletes/$slug`) so one `Webpage`
+ * record can hold shared copy for every slug instance.
  * Splat routes (`.../$`) are skipped.
  *
  * `aliases` (alias prefix → absolute file path, e.g. from Vite's resolved
