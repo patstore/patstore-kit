@@ -234,10 +234,11 @@ function categoriesArraySelection(className: string): string {
 
 /**
  * Built-in class field — a JSON object keyed by locale. Not declared on the
- * module, so it is selected for every class.
+ * module, so it is selected for every class. The value is a plain object, so
+ * the query names the field and does not request subfields.
  */
 export function translationsSelection(): string {
-	return elementArraySelection('translations');
+	return 'translations';
 }
 
 function stripNamedSelection(selection: string, fieldName: string): string {
