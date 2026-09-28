@@ -1,4 +1,4 @@
-import { flattenManifestToPaths, pathValuesToMap } from './flatten.js';
+import { flattenManifestToPaths } from './flatten.js';
 import { toLocale } from './locale.js';
 import { buildLocalizedPageContent, schemasEqual } from './page-content.js';
 import type { CmsContentMap, CmsManifest, CmsPathValue } from './types.js';
@@ -31,7 +31,7 @@ export interface SyncManifestOptions {
 /**
  * For each scanned page, find its single `Webpage` record by `project` + `path`.
  * PatStore `page_content` is stored as `{ default, "de-DE", ... }`.
- * The returned map is `page_data` as stored: `{ path: value }`, with the locale
+ * The returned entries are `page_data` as stored (`{ path, value }`), with the locale
  * already in the path (`de-DE.home_start.title`). `page_data` only gains newly discovered paths.
  */
 export async function syncManifestToPatStore(options: SyncManifestOptions): Promise<CmsContentMap> {
@@ -75,10 +75,10 @@ export async function syncManifestToPatStore(options: SyncManifestOptions): Prom
 				}
 			}
 
-			contentMap.pages[pagePath] = pathValuesToMap(merged);
+			contentMap.pages[pagePath] = merged;
 		} catch (error) {
 			log(`sync failed for "${pagePath}" — using scanned defaults: ${(error as Error).message}`);
-			contentMap.pages[pagePath] = pathValuesToMap(defaults);
+			contentMap.pages[pagePath] = defaults;
 		}
 	}
 
@@ -90,7 +90,7 @@ export function contentMapFromDefaults(manifest: CmsManifest, defaultLang: strin
 	const locale = toLocale(defaultLang);
 	const pages: CmsContentMap['pages'] = {};
 	for (const [pagePath, pageManifest] of Object.entries(manifest.pages)) {
-		pages[pagePath] = pathValuesToMap(flattenManifestToPaths(pageManifest));
+		pages[pagePath] = flattenManifestToPaths(pageManifest);
 	}
 	return {
 		_meta: {

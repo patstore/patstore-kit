@@ -59,8 +59,8 @@ export interface CmsContentMap {
 		languages: string[];
 	};
 	/**
-	 * Path → flat `page_data` map. Locale lives in the path (`de-DE.home_start.title`);
-	 * paths without a locale prefix are the default values.
+	 * Path → `page_data` entries as stored on the server. Locale is part of
+	 * `path` (`de-DE.home_start.title`). Paths without a locale prefix are the default.
 	 */
-	pages: Record<string, CmsPageContent>;
+	pages: Record<string, CmsPathValue[]>;
 }
