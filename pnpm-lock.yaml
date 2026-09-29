@@ -17,6 +17,9 @@ importers:
 
   packages/cms-content-plugin:
     dependencies:
+      '@patstore/core':
+        specifier: workspace:*
+        version: link:../core
       '@patstore/octane-pages-plugin':
         specifier: workspace:*
         version: link:../octane-pages-plugin

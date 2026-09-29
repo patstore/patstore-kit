@@ -107,6 +107,56 @@ export type ClassTranslation = {
 	[key: LanguageValue]: ClassTranslationEntry;
 };
 
+export type WebpageStructuredFieldType = 'text' | 'richtext' | 'image' | 'link' | 'collection' | 'file';
+
+export type WebpageStructuredLinkValue = {
+	text: string;
+	href: string;
+};
+
+export type WebpageStructuredContainerType =
+	| 'section'
+	| 'header'
+	| 'article'
+	| 'aside'
+	| 'nav'
+	| 'footer'
+	| 'main'
+	| 'div'
+	| (string & {});
+
+export type WebpageStructuredFieldSchema = {
+	type: WebpageStructuredFieldType;
+	label: string;
+	default?: unknown;
+	/** Collection item schema (`type === "collection"`). */
+	fields?: WebpageStructuredNodeMap;
+	/** @deprecated Prefer `fields` for collections; kept for older schemas. */
+	content?: WebpageStructuredNodeMap;
+};
+
+export type WebpageStructuredContainerSchema = {
+	type: WebpageStructuredContainerType;
+	label: string;
+	content: WebpageStructuredNodeMap;
+};
+
+export type WebpageStructuredSchemaNode = WebpageStructuredFieldSchema | WebpageStructuredContainerSchema;
+
+/** Field tree for one language, a section, or a collection item. */
+export type WebpageStructuredNodeMap = Record<string, WebpageStructuredSchemaNode>;
+
+export type WebpageStructuredSchemaKey = 'default' | LanguageValue;
+
+/** Top-level `page_content`: one field tree per language, plus `default`. */
+export type WebpageStructuredSchema = Partial<Record<WebpageStructuredSchemaKey, WebpageStructuredNodeMap>>;
+
+/** One `page_data` row. Locale is part of `path` (`de-DE.home_start.title`). */
+export type WebpageStructuredValueEntry = {
+	path: string;
+	value: unknown;
+};
+
 export interface PatStoreGeoPoint {
 	latitude: number;
 	longitude: number;

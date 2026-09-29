@@ -57,6 +57,8 @@ const HELPER_TYPE_IMPORTS = {
 	PatStoreGeoPoint: true,
 	PatStoreObject: true,
 	ClassTranslation: true,
+	WebpageStructuredSchema: true,
+	WebpageStructuredValueEntry: true,
 } as const;
 
 export interface PatstoreTypeEntry {
@@ -200,6 +202,22 @@ function collectFields(module: PatStoreModule): Array<{
 			label: 'Categories',
 			required: false,
 			tsType: 'string[] | null',
+		});
+	}
+
+	if (module.connected_class?.trim() === 'Webpage') {
+		byId.delete('content');
+		byId.set('page_data', {
+			id: 'page_data',
+			label: byId.get('page_data')?.label || 'Page data',
+			required: false,
+			tsType: 'WebpageStructuredValueEntry[] | null',
+		});
+		byId.set('page_content', {
+			id: 'page_content',
+			label: byId.get('page_content')?.label || 'Page content',
+			required: false,
+			tsType: 'WebpageStructuredSchema | null',
 		});
 	}
 

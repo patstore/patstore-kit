@@ -1,3 +1,5 @@
+import type { WebpageStructuredValueEntry } from '@patstore/core';
+
 export type CmsFieldType = 'text' | 'richtext' | 'image' | 'link' | 'file' | 'collection';
 
 export interface CmsFieldNode {
@@ -45,10 +47,8 @@ export interface CmsManifest {
  */
 export type CmsPageContent = Record<string, unknown>;
 
-export interface CmsPathValue {
-	path: string;
-	value: unknown;
-}
+/** Same row shape as `PatstoreWebpage.page_data`. */
+export type CmsPathValue = WebpageStructuredValueEntry;
 
 export interface CmsContentMap {
 	_meta: {

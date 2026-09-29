@@ -1,6 +1,6 @@
 {
   "name": "@patstore/cms-content-plugin",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Vite plugin that scans Section/Field marker components in page markup and syncs page content with PatStore",
   "type": "module",
   "license": "UNLICENSED",
@@ -16,6 +16,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./reader": {
+      "types": "./dist/reader.d.ts",
+      "import": "./dist/reader.js"
     }
   },
   "files": ["dist"],
@@ -25,6 +29,7 @@
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "dependencies": {
+    "@patstore/core": "workspace:*",
     "@patstore/octane-pages-plugin": "workspace:*"
   },
   "peerDependencies": {

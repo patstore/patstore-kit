@@ -177,6 +177,8 @@ export { scanTsrxContent } from './scan-content.js';
 export { extractImportSpecifiers, resolveImportSpecifier } from './resolve-imports.js';
 export { flattenManifestToPaths, pathValuesToMap } from './flatten.js';
 export { toLocale } from './locale.js';
+export { bindCmsContent, getAllPageContent, getPageContent, isCmsContentReady } from './reader.js';
+export type { CmsContentEntry, CmsContentFile, CmsContentPages } from './reader.js';
 export { contentMapFromDefaults, syncManifestToPatStore } from './sync.js';
 export { writeContentArtifacts, writeStubContentArtifacts } from './codegen.js';
 export { fetchProjectLanguages } from './patstore-rest.js';
