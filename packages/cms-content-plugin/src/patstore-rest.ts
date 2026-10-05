@@ -9,7 +9,7 @@ export interface CmsRestEnv {
 	projectId: string;
 	/** PatStore class that stores page content, e.g. `Webpage`. */
 	className: string;
-	/** Array-type field on `className` holding `{ path, value }` entries — the edited values. Default: `page_data`. */
+	/** Array-type field on `className` holding `{ path, value }` entries. Read only — an external CMS writes it. Default: `page_data`. */
 	fieldName: string;
 	/** Field on `className` holding the nested field schema PatStore's editor renders from. Default: `page_content`. */
 	schemaFieldName: string;
@@ -135,21 +135,13 @@ export async function fetchProjectLanguages(env: CmsRestEnv): Promise<string[]> 
 	return fallback === 'default' ? [] : [fallback];
 }
 
-/** Updates whichever of `pageData` (edited values) / `schema` (locale-keyed `page_content`) are provided, in one PUT. */
+/** Writes the locale-keyed `page_content` schema. `page_data` is never part of the PUT. */
 export async function updateWebpage(
 	env: CmsRestEnv,
 	objectId: string,
-	fields: { pageData?: CmsPathValue[]; schema?: LocalizedPageContent },
+	schema: LocalizedPageContent,
 ): Promise<void> {
-	const body: Record<string, unknown> = {};
-	if (fields.pageData) {
-		body[env.fieldName] = fields.pageData;
-	}
-	if (fields.schema) {
-		body[env.schemaFieldName] = fields.schema;
-	}
-	if (Object.keys(body).length === 0) {
-		return;
-	}
-	await parseRestRequest(env, 'PUT', `/classes/${env.className}/${objectId}`, body);
+	await parseRestRequest(env, 'PUT', `/classes/${env.className}/${objectId}`, {
+		[env.schemaFieldName]: schema,
+	});
 }

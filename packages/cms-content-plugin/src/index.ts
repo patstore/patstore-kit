@@ -16,7 +16,7 @@ export interface CmsContentPluginOptions {
 	outputDir?: string;
 	/** PatStore class storing page content. Default: `Webpage` */
 	className?: string;
-	/** Array-type field on `className` holding `{ path, value }` entries (edited values). Default: `page_data` */
+	/** Array-type field on `className` holding `{ path, value }` entries. Read only. Default: `page_data` */
 	fieldName?: string;
 	/** Field on `className` holding the nested field schema PatStore's editor renders from. Default: `page_content` */
 	schemaFieldName?: string;
@@ -25,7 +25,7 @@ export interface CmsContentPluginOptions {
 	 * is a plain string field instead of a Pointer. Default: `Project`
 	 */
 	projectPointerClassName?: string | null;
-	/** Sync scanned defaults to PatStore (update existing `Webpage` records). Default: true unless `VITE_CMS_CONTENT_SYNC=false` */
+	/** Sync the scanned schema to `page_content` on existing `Webpage` records. Never writes `page_data`. Default: true unless `VITE_CMS_CONTENT_SYNC=false` */
 	sync?: boolean;
 	/** Fail the build when sync fails. Default: false (warns and falls back to defaults). */
 	strictSync?: boolean;

@@ -1,26 +1,8 @@
 import { flattenManifestToPaths } from './flatten.js';
 import { toLocale } from './locale.js';
 import { buildLocalizedPageContent, schemasEqual } from './page-content.js';
-import type { CmsContentMap, CmsManifest, CmsPathValue } from './types.js';
+import type { CmsContentMap, CmsManifest } from './types.js';
 import { fetchProjectLanguages, findWebpageByPath, updateWebpage, type CmsRestEnv } from './patstore-rest.js';
-
-/** Adds any paths present in `defaults` but missing from `existing` — never overwrites edited CMS values. */
-function mergeMissingPaths(
-	defaults: CmsPathValue[],
-	existing: CmsPathValue[],
-): { merged: CmsPathValue[]; addedPaths: string[] } {
-	const byPath = new Map(existing.map((entry) => [entry.path, entry]));
-	const addedPaths: string[] = [];
-
-	for (const entry of defaults) {
-		if (!byPath.has(entry.path)) {
-			byPath.set(entry.path, entry);
-			addedPaths.push(entry.path);
-		}
-	}
-
-	return { merged: Array.from(byPath.values()), addedPaths };
-}
 
 export interface SyncManifestOptions {
 	env: CmsRestEnv;
@@ -30,9 +12,10 @@ export interface SyncManifestOptions {
 
 /**
  * For each scanned page, find its single `Webpage` record by `project` + `path`.
- * PatStore `page_content` is stored as `{ default, "de-DE", ... }`.
+ * `page_content` (the field schema) is written as `{ default, "de-DE", ... }`.
+ * `page_data` is only read — an external CMS owns that field, so this plugin never writes it.
  * The returned entries are `page_data` as stored (`{ path, value }`), with the locale
- * already in the path (`de-DE.home_start.title`). `page_data` only gains newly discovered paths.
+ * already in the path (`de-DE.home_start.title`).
  */
 export async function syncManifestToPatStore(options: SyncManifestOptions): Promise<CmsContentMap> {
 	const log = options.log ?? (() => {});
@@ -48,8 +31,6 @@ export async function syncManifestToPatStore(options: SyncManifestOptions): Prom
 	};
 
 	for (const [pagePath, pageManifest] of Object.entries(options.manifest.pages)) {
-		const defaults = flattenManifestToPaths(pageManifest);
-
 		try {
 			const existing = await findWebpageByPath(options.env, pagePath);
 
@@ -58,27 +39,16 @@ export async function syncManifestToPatStore(options: SyncManifestOptions): Prom
 				continue;
 			}
 
-			const { merged, addedPaths } = mergeMissingPaths(defaults, existing.pageData);
 			const localizedSchema = buildLocalizedPageContent(pageManifest, existing.schema, locales);
-			const schemaChanged = !schemasEqual(existing.schema, localizedSchema);
-
-			if (addedPaths.length > 0 || schemaChanged) {
-				await updateWebpage(options.env, existing.objectId, {
-					pageData: addedPaths.length > 0 ? merged : undefined,
-					schema: schemaChanged ? localizedSchema : undefined,
-				});
-				if (addedPaths.length > 0) {
-					log(`added ${addedPaths.length} new path(s) to "${pagePath}": ${addedPaths.join(', ')}`);
-				}
-				if (schemaChanged) {
-					log(`updated ${options.env.schemaFieldName} for "${pagePath}"`);
-				}
+			if (!schemasEqual(existing.schema, localizedSchema)) {
+				await updateWebpage(options.env, existing.objectId, localizedSchema);
+				log(`updated ${options.env.schemaFieldName} for "${pagePath}"`);
 			}
 
-			contentMap.pages[pagePath] = merged;
+			contentMap.pages[pagePath] = existing.pageData;
 		} catch (error) {
 			log(`sync failed for "${pagePath}" — using scanned defaults: ${(error as Error).message}`);
-			contentMap.pages[pagePath] = defaults;
+			contentMap.pages[pagePath] = flattenManifestToPaths(pageManifest);
 		}
 	}
 
