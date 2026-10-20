@@ -117,7 +117,10 @@ function typescriptTypeForFieldType(type: ModuleFieldType, fieldId: string): str
 	if (type === 'person' || type === 'edit_person') {
 		return 'PatStorePersonRef | null';
 	}
-	if (type === 'edit_persons' || type === 'edit_team' || type === 'persons') {
+	if (type === 'edit_persons' || type === 'persons') {
+		return 'string[] | null';
+	}
+	if (type === 'edit_team') {
 		return 'PatStorePersonRef[] | null';
 	}
 	if (type === 'category') {
