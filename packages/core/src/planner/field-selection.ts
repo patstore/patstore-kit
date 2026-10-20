@@ -44,6 +44,7 @@ const ELEMENT_ARRAY_FIELD_TYPES = new Set<ModuleFieldType>([
 	'edit_webpage_components',
 	'edit_dates',
 	'edit_times',
+	'persons'
 ]);
 
 const SCALAR_FIELD_TYPES = new Set<ModuleFieldType>([
